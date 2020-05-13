@@ -1,7 +1,7 @@
 db.createUser(
     {
         user: "mongo-user",
-        pwd: "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjùdf",
+        pwd: "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjdf",
         roles: [
             {
                 role: "readWrite",
