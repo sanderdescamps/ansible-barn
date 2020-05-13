@@ -1,1 +1,17 @@
-
+---
+- name: Teatplaybook for custom module
+  gather_facts: False
+  hosts: 
+      - srvdns01.myhomecloud.be
+  tasks: 
+      - name: test custom module
+        delegate_to: localhost
+        absible_barn:
+          host: "192.168.1.39"
+          name: "{{inventory_hostname}}"
+          port: 9200
+          state: present
+          data: 
+            test: data
+            creationdate: vandaag
+        
