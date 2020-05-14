@@ -17,64 +17,53 @@ class MongoInventoryDB(InventoryDB):
 
   def sample_init(self):
     self.mdb["inventory"]["host_inventory"].delete_many({})
-    e1={
-        "hostname" :  "srvplex01.myhomecloud.be",
-        "hostname_short" :   "srvplex01",
-        "ip_address" :         "10.10.6.29",
-        "facts" :       {}
-    }
-    e2={
-        "hostname" :  "srvdns01.myhomecloud.be",
-        "hostname_short" :   "srvdns01",
-        "ip_address" :         "10.10.6.4",
-        "facts" :       {}
-    }
-    e3={
-        "hostname" :  "srvdns02.myhomecloud.be",
-        "hostname_short" :   "srvdns02",
-        "ip_address" :         "10.10.6.5",
-        "facts" :       {},
-        "creation_date" : "kdfpd"
-    }
-    self.addhost(e1)
-    self.addhost(e2)
-    self.addhost(e3)
+    self.add_host("srvplex01.myhomecloud.be")
+    self.add_host("srvdns01.myhomecloud.be")
+    self.add_host("srvdns02.myhomecloud.be")
 
-
-  def host_exist(self,hostname):
-    if self.mdb["inventory"]["host_inventory"].find({ "hostname": hostname }).count() > 0:
+  def host_exist(self,name):
+    if self.mdb["inventory"]["host_inventory"].find({ "name": name }).count() > 0:
       return True
     return False
 
-  def addhost(self, host):
-    if not self.host_exist(host["hostname"]):
-      self.mdb["inventory"]["host_inventory"].insert_one(host)
+  def add_host(self, host):
+    if type(host) is str: 
+      h = Host(host)
+      self.mdb["inventory"]["host_inventory"].insert_one(h.serialize())
+    elif type(host) is Host:
+      self.mdb["inventory"]["host_inventory"].insert_one(host.serialize())
 
-  def get_host(self, hostname):
-    query = { "hostname": hostname }
-    mydoc = self.mdb["inventory"]["host_inventory"].find_one(query)
-    return mydoc
-  
-  def set_variable(self, hostname, key, value):
-    query = { "hostname": hostname }
-    newvalue = { "$set": { key: value } }
-    self.mdb["inventory"]["host_inventory"].update_one(query, newvalue)
+  def update_host(self,host):
+    if self.host_exist(host.get_name()):
+      myquery = { "name": host.get_name() }
+      s_host = host.serialize()
+      newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": s_host["groups"], "implicit": s_host["implicit"]  } }
+      self.mdb["inventory"]["host_inventory"].update_one(myquery, newvalues)
+
+  def get_host(self, name):
+    query = { "name": name }
+    data = self.mdb["inventory"]["host_inventory"].find_one(query)
+    h = Host()
+    h.deserialize(data)
+    return h
+
+  def set_variable(self, name, key, value):
+    h = self.get_host(name)
+    h.set_variable(key,value)
+    self.update_host(h)
 
   def main(self):
     self.sample_init()
-    self.get_host("srvdns02.myhomecloud.be")
+    print(self.get_host("srvdns02.myhomecloud.be").serialize())
     self.set_variable("srvdns02.myhomecloud.be","newvar","newvalue")
     cursor = self.mdb["inventory"]["host_inventory"].find({})
     for document in cursor:
-          print(document)
+      print(document)
      
 
 if __name__ == '__main__':
-    #inventory_database=MongoInventoryDB('192.168.1.39', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")
+    inventory_database=MongoInventoryDB('192.168.1.39', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")
     #inventory_database=MongoInventoryDB('192.168.1.39', 27017, "mongo-user", "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjdf")
-    #inventory_database.main()
-
-    h = Host("srvdns02.myhomecloud.be",port=22)
-    print(h.serialize())
+    inventory_database.main()
 
     
