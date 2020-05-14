@@ -1,4 +1,4 @@
-from InventoryDB import InventoryDB
+from ansible_barn.InventoryDB import InventoryDB
 import pymongo 
 import urllib.parse
 import uuid
@@ -59,7 +59,7 @@ class MongoInventoryDB(InventoryDB):
     cursor = self.mdb["inventory"]["host_inventory"].find({})
     for document in cursor:
       print(document)
-     
+    
 
 if __name__ == '__main__':
     inventory_database=MongoInventoryDB('192.168.1.39', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")

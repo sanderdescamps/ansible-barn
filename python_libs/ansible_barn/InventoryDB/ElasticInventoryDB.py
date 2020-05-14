@@ -3,7 +3,7 @@ import sys
 import argparse
 from elasticsearch import Elasticsearch
 from datetime import datetime
-from InventoryDB import InventoryDB
+from ansible_barn.InventoryDB import InventoryDB
 
 
 try:
