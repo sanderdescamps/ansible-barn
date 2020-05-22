@@ -13,7 +13,7 @@ import json
 
 
 
-class MongoInventoryDB(object):
+class MongoInventoryDB(InventoryDB):
   def __init__(self, hostname, port=27017, username=None, password=None):
     self.hostname = hostname
     self.port = port
