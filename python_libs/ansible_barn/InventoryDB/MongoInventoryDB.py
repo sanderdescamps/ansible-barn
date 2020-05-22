@@ -57,39 +57,6 @@ class MongoInventoryDB(object):
     else: 
       raise MemberNotFoundError
 
-
-
-  # def update_host(self,host):
-  #   if self.host_exist(host.get_name()):
-  #     myquery = { "name": host.get_name() }
-  #     s_host = host.serialize()
-  #     newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": list(map(lambda y: y.get_name(), host.get_groups())), "implicit": s_host["implicit"]  } }
-  #     self.mdb["inventory"]["host_inventory"].update_one(myquery, newvalues)
-
-  # def update_group(self, group):
-  #   if self.group_exist(group.get_name()):
-  #     myquery = { "name": group.get_name() }
-  #     s_group = group.serialize()
-  #     newvalues = { "$set": { "vars": s_group["vars"], "parent_groups": s_group["parent_groups"], "depth": s_group["depth"], "hosts": s_group["hosts"]  } }
-  #     self.mdb["inventory"]["group_inventory"].update_one(myquery, newvalues) 
-
-  # def get_group(self, name):
-  #   query = { "name": name }
-  #   data = self.mdb["inventory"]["group_inventory"].find_one(query)
-  #   data["hosts"] = list(map(lambda x: self.get_host(x), data["hosts"]))
-  #   data["parent_groups"] = list(map(lambda x: self.get_group(x).serialize(), data["parent_groups"]))
-  #   #data["parent_groups"] = list(map(self.get_group, data["hosts"]))
-  #   g = Group()
-  #   g.deserialize(data)
-  #   return g
-
-  # def get_host(self, name):
-  #   query = { "name": name }
-  #   data = self.mdb["inventory"]["host_inventory"].find_one(query)
-  #   h = Host()
-  #   h.deserialize(data)
-  #   return h
-
   def set_variable(self, name, key, value):
     if self.host_exist(name):
       self.mdb["inventory"]["host_inventory"].update_one({"name": name}, {"$set": {"vars": {key: value}}})
