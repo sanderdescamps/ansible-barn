@@ -65,6 +65,15 @@ def main(command_line=None):
     push_variable_parser.add_argument('key', action='store', help='Variable name')
     push_variable_parser.add_argument('value', action='store',help='Variable value')
 
+    # ansible-barn push-variable
+    show_parser = actionparsers.add_parser('show', aliases=['push-var'], help='Push a variable through all hosts in a group')
+    show_parser.add_argument('name', action='store', default=None, help='Name of the group/host')
+    show_parser.add_argument('--format','-f', action='store', default="json", help='Format of the output (json,yaml,text)')
+    # show_parser.add_argument('--json', action='store_true', default=None, help='output in json')
+    # show_parser.add_argument('--yaml','--yml', action='store_true', default=None, help='output in yaml')
+    # show_parser.add_argument('--text', action='store_true', default=None, help='output in json')
+
+
     args = parser.parse_args(command_line)
     
     prop = load_properties()
@@ -82,7 +91,8 @@ def main(command_line=None):
             barn.add_group(args.name)
     elif args.command == "set-variable":
         barn.set_variable(args.name, args.key, args.value)
-
+    elif args.command == "show":
+        barn
 
 
 
