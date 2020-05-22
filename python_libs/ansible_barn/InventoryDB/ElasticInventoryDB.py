@@ -65,7 +65,7 @@ if __name__ == '__main__':
     barn=ElasticInventoryDB('192.168.1.39', 9200)
     # barn.flush()
     # barn.sample_init()
-    print(json.dumps(barn.get_id_host('srvdns02.myhomecloud.be'), indent=2))
+    # print(json.dumps(barn.get_id_host('srvdns02.myhomecloud.be'), indent=2))
     # print(json.dumps(barn.get_all_hosts(), indent=2))
     # print(json.dumps(barn.get_host_by_id(2), indent=2))
 
