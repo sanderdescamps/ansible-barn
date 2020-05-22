@@ -8,7 +8,7 @@ import uuid
 from ansible.inventory.host import Host
 from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
-
+import json
 
 
 class MongoInventoryDB(object):
@@ -25,12 +25,12 @@ class MongoInventoryDB(object):
     self.mdb["inventory"]["group_inventory"]
 
   def host_exist(self,name):
-    if self.mdb["inventory"]["host_inventory"].find({ "name": name }).count() > 0:
+    if self.mdb["inventory"]["host_inventory"].count_documents({ "name": name }) > 0:
       return True
     return False
 
   def group_exist(self, name):
-    if self.mdb["inventory"]["group_inventory"].find({ "name": name }).count() > 0:
+    if self.mdb["inventory"]["group_inventory"].count_documents({ "name": name }) > 0:
       return True
     return False
 
@@ -56,7 +56,7 @@ class MongoInventoryDB(object):
     if self.host_exist(host.get_name()):
       myquery = { "name": host.get_name() }
       s_host = host.serialize()
-      newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": s_host["groups"], "implicit": s_host["implicit"]  } }
+      newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": list(map(lambda y: y.get_name(), host.get_groups())), "implicit": s_host["implicit"]  } }
       self.mdb["inventory"]["host_inventory"].update_one(myquery, newvalues)
 
   def update_group(self, group):
@@ -93,19 +93,21 @@ class MongoInventoryDB(object):
       g.set_variable(key,value)
       self.update_group(g)
   
-
-
   def _flush(self):
     self.mdb["inventory"]["host_inventory"].delete_many({})
     self.mdb["inventory"]["group_inventory"].delete_many({})
 
   def _print_all(self):
+    print("##### HOSTS ######")
     cursor = self.mdb["inventory"]["host_inventory"].find({})
     for document in cursor:
-      print(document)
+      del document["_id"]
+      print(json.dumps(document, sort_keys=True, indent=2))
+    print("##### GROUPS ######")
     cursor = self.mdb["inventory"]["group_inventory"].find({})
     for document in cursor:
-      print(document)
+      del document["_id"]
+      print(json.dumps(document, sort_keys=True, indent=2))
 
 
 if __name__ == '__main__':
@@ -125,12 +127,18 @@ if __name__ == '__main__':
     h1.set_variable("env_environment", "development")
     inventory_database.update_host(h1)
     g1 = Group(name="dns_servers")
+    g1.set_variable("description", "dit is een DNS server")
     g2 = Group(name="all_servers")
     g1.add_host(h1)
     g1.add_host(h2)
     g2.add_child_group(g1)
     inventory_database.add_group(g1)
     inventory_database.add_group(g2)
+    inventory_database.update_host(h2)
+    inventory_database.update_host(h1)
+    
+    inventory_database._print_all()
+    # print(inventory_database.get_host("srvdns01.myhomecloud.be").get_vars())
     print(inventory_database.get_host("srvdns01.myhomecloud.be").get_vars())
 
 
