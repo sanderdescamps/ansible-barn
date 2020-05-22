@@ -1,0 +1,7 @@
+README
+setup.py
+ansible_barn/BarnInventory.py
+ansible_barn.egg-info/PKG-INFO
+ansible_barn.egg-info/SOURCES.txt
+ansible_barn.egg-info/dependency_links.txt
+ansible_barn.egg-info/top_level.txt
