@@ -2,6 +2,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 from ansible_barn.InventoryDB import InventoryDB
+from ansible_barn.InventoryDB import MemberNotFoundError
 import pymongo 
 import urllib.parse
 import uuid
@@ -9,6 +10,7 @@ from ansible.inventory.host import Host
 from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
 import json
+
 
 
 class MongoInventoryDB(object):
@@ -38,61 +40,90 @@ class MongoInventoryDB(object):
     if type(host) is str: 
       h = Host(host)
       self.mdb["inventory"]["host_inventory"].insert_one(h.serialize())
-    elif type(host) is Host:
-      self.mdb["inventory"]["host_inventory"].insert_one(host.serialize())
 
   def add_group(self, group):
     if type(group) is str: 
       g = Group(group)
       self.mdb["inventory"]["group_inventory"].insert_one(g.serialize())
-    elif isinstance (group, Group):
-      s_group = group.serialize()
-      # s_group["hosts"] = list(map(str, s_group["hosts"]))
-      s_group["hosts"] = list(map(lambda x: x.get_name(), s_group["hosts"]))
-      s_group["parent_groups"] = list(map(lambda y: y["name"], s_group["parent_groups"]))
-      self.mdb["inventory"]["group_inventory"].insert_one(s_group)
 
-  def update_host(self,host):
-    if self.host_exist(host.get_name()):
-      myquery = { "name": host.get_name() }
-      s_host = host.serialize()
-      newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": list(map(lambda y: y.get_name(), host.get_groups())), "implicit": s_host["implicit"]  } }
-      self.mdb["inventory"]["host_inventory"].update_one(myquery, newvalues)
+  def add_child_group_to_group(self, child_group, parent_group):
+    self.mdb["inventory"]["group_inventory"].update_one({ "name": child_group },{ "$addToSet": { "parent_groups": parent_group } })
+    self.mdb["inventory"]["group_inventory"].update_one({ "name": parent_group },{ "$addToSet": { "child_groups": child_group } })
 
-  def update_group(self, group):
-    if self.group_exist(group.get_name()):
-      myquery = { "name": group.get_name() }
-      s_group = group.serialize()
-      newvalues = { "$set": { "vars": s_group["vars"], "parent_groups": s_group["parent_groups"], "depth": s_group["depth"], "hosts": s_group["hosts"]  } }
-      self.mdb["inventory"]["group_inventory"].update_one(myquery, newvalues) 
+  def add_host_to_group(self, host_name, group_name):
+    if self.host_exist(host_name): 
+      self.mdb["inventory"]["group_inventory"].update_one({ "name": group_name },{ "$addToSet": { "hosts": host_name } })
+      self.mdb["inventory"]["host_inventory"].update_one({ "name": host_name },{ "$addToSet": { "groups": group_name } })
+    else: 
+      raise MemberNotFoundError
 
-  def get_group(self, name):
-    query = { "name": name }
-    data = self.mdb["inventory"]["group_inventory"].find_one(query)
-    data["hosts"] = list(map(lambda x: self.get_host(x), data["hosts"]))
-    data["parent_groups"] = list(map(lambda x: self.get_group(x).serialize(), data["parent_groups"]))
-    #data["parent_groups"] = list(map(self.get_group, data["hosts"]))
-    g = Group()
-    g.deserialize(data)
-    return g
 
-  def get_host(self, name):
-    query = { "name": name }
-    data = self.mdb["inventory"]["host_inventory"].find_one(query)
-    h = Host()
-    h.deserialize(data)
-    return h
+
+  # def update_host(self,host):
+  #   if self.host_exist(host.get_name()):
+  #     myquery = { "name": host.get_name() }
+  #     s_host = host.serialize()
+  #     newvalues = { "$set": { "vars": s_host["vars"], "address": s_host["address"], "uuid": s_host["uuid"], "groups": list(map(lambda y: y.get_name(), host.get_groups())), "implicit": s_host["implicit"]  } }
+  #     self.mdb["inventory"]["host_inventory"].update_one(myquery, newvalues)
+
+  # def update_group(self, group):
+  #   if self.group_exist(group.get_name()):
+  #     myquery = { "name": group.get_name() }
+  #     s_group = group.serialize()
+  #     newvalues = { "$set": { "vars": s_group["vars"], "parent_groups": s_group["parent_groups"], "depth": s_group["depth"], "hosts": s_group["hosts"]  } }
+  #     self.mdb["inventory"]["group_inventory"].update_one(myquery, newvalues) 
+
+  # def get_group(self, name):
+  #   query = { "name": name }
+  #   data = self.mdb["inventory"]["group_inventory"].find_one(query)
+  #   data["hosts"] = list(map(lambda x: self.get_host(x), data["hosts"]))
+  #   data["parent_groups"] = list(map(lambda x: self.get_group(x).serialize(), data["parent_groups"]))
+  #   #data["parent_groups"] = list(map(self.get_group, data["hosts"]))
+  #   g = Group()
+  #   g.deserialize(data)
+  #   return g
+
+  # def get_host(self, name):
+  #   query = { "name": name }
+  #   data = self.mdb["inventory"]["host_inventory"].find_one(query)
+  #   h = Host()
+  #   h.deserialize(data)
+  #   return h
 
   def set_variable(self, name, key, value):
     if self.host_exist(name):
-      h = self.get_host(name)
-      h.set_variable(key,value)
-      self.update_host(h)
+      self.mdb["inventory"]["host_inventory"].update_one({"name": name}, {"$set": {"vars": {key: value}}})
     elif self.group_exist(name):
-      g = self.get_group(name)
-      g.set_variable(key,value)
-      self.update_group(g)
-  
+      self.mdb["inventory"]["group_inventory"].update_one({"name": name}, {"$set": {"vars": {key: value}}})
+
+  def get_vars(self,name):
+    if self.host_exist(name):
+      res={}
+      host = self.mdb["inventory"]["host_inventory"].find_one({ "name": name })
+      if "vars" in host and host["vars"] is not None and len(host["vars"]) > 0:
+          res = combine_vars(res,host["vars"])
+      
+      to_process_groups = host["groups"]
+      while len(to_process_groups)>0:
+        g_name = to_process_groups.pop()
+        g = self.mdb["inventory"]["group_inventory"].find_one({ "name": g_name })
+        if "vars" in g and g["vars"] is not None and len(g["vars"]) > 0:
+          res = combine_vars(res,g["vars"])
+        if "parent_groups" in g and g["parent_groups"] is not None and len(g["parent_groups"]) > 0:
+          to_process_groups.extend(g["parent_groups"])
+    
+    elif self.group_exist(name):
+      res={}
+      to_process_groups = [name]
+      while len(to_process_groups)>0:
+        g_name = to_process_groups.pop()
+        g = self.mdb["inventory"]["group_inventory"].find_one({ "name": g_name })
+        if "vars" in g and g["vars"] is not None and len(g["vars"]) > 0:
+          res = combine_vars(res,g["vars"])
+        if "parent_groups" in g and g["parent_groups"] is not None and len(g["parent_groups"]) > 0:
+          to_process_groups.extend(g["parent_groups"])
+    return res
+
   def _flush(self):
     self.mdb["inventory"]["host_inventory"].delete_many({})
     self.mdb["inventory"]["group_inventory"].delete_many({})
@@ -108,39 +139,4 @@ class MongoInventoryDB(object):
     for document in cursor:
       del document["_id"]
       print(json.dumps(document, sort_keys=True, indent=2))
-
-
-if __name__ == '__main__':
-    inventory_database=MongoInventoryDB('192.168.1.39', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")
-    #inventory_database=MongoInventoryDB('192.168.1.39', 27017, "mongo-user", "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjdf")
-
-    inventory_database._flush()
-    inventory_database.add_host("srvplex01.myhomecloud.be")
-    inventory_database.add_host("srvdns01.myhomecloud.be")
-    inventory_database.add_host("srvdns02.myhomecloud.be")
-    
-
-
-    h1 = inventory_database.get_host("srvdns01.myhomecloud.be")
-    h2 = Host("srvdns02.myhomecloud.be")
-
-    h1.set_variable("env_environment", "development")
-    inventory_database.update_host(h1)
-    g1 = Group(name="dns_servers")
-    g1.set_variable("description", "dit is een DNS server")
-    g2 = Group(name="all_servers")
-    g1.add_host(h1)
-    g1.add_host(h2)
-    g2.add_child_group(g1)
-    inventory_database.add_group(g1)
-    inventory_database.add_group(g2)
-    inventory_database.update_host(h2)
-    inventory_database.update_host(h1)
-    
-    inventory_database._print_all()
-    # print(inventory_database.get_host("srvdns01.myhomecloud.be").get_vars())
-    print(inventory_database.get_host("srvdns01.myhomecloud.be").get_vars())
-
-
-
-    
+   
