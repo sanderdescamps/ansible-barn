@@ -1,6 +1,3 @@
-from __future__ import (absolute_import, division, print_function)
-__metaclass__ = type
-
 from ansible_barn.InventoryDB import InventoryDB
 from ansible_barn.InventoryDB import MemberNotFoundError
 import pymongo 
@@ -11,7 +8,19 @@ from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
 import json
 
-
+def clean_dir(d):
+  res = {}
+  if type(d)== dict:
+    for k,v in d.items():
+      if k.startswith('_'):
+        pass
+      elif type(v) == dict or type(v) == list:
+        res[k] = clean_dir(v)
+      else:
+        res[k]=v
+  elif type(d)== list:
+    res = list(map(lambda x: clean_dir(x) if type(x)==dict else x, d))    
+  return res
 
 class MongoInventoryDB(InventoryDB):
   def __init__(self, hostname, port=27017, username=None, password=None):
@@ -106,4 +115,25 @@ class MongoInventoryDB(InventoryDB):
     for document in cursor:
       del document["_id"]
       print(json.dumps(document, sort_keys=True, indent=2))
-   
+
+  def __export_host(self, name=None):
+    if name is None or name.lower() == "all":
+      return { "hosts": list(self.mdb["inventory"]["host_inventory"].find({})), "groups": list(self.mdb["inventory"]["group_inventory"].find({}))}
+    elif self.host_exist(name):
+      return { "hosts": list(self.mdb["inventory"]["host_inventory"].find({ "name": name }))}
+
+  def export(self, name=None):
+    if name is None or name.lower() == "all":
+      hosts = list(self.mdb["inventory"]["host_inventory"].find())
+      hosts = clean_dir(hosts)
+      groups = list(self.mdb["inventory"]["group_inventory"].find())
+      groups = clean_dir(groups)
+      return { "hosts": hosts, "groups": groups}
+    elif self.host_exist(name):
+      hosts = list(self.mdb["inventory"]["host_inventory"].find({ "name": name }))
+      hosts = clean_dir(hosts)
+      return { "hosts": hosts}
+    elif self.group_exist(name):
+      groups = list(self.mdb["inventory"]["group_inventory"].find({ "name": name }))
+      groups = clean_dir(groups)
+      return { "groups": groups}

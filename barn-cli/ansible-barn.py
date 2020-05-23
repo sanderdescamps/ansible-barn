@@ -2,7 +2,8 @@ import argparse
 import configparser
 import os.path
 from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
-
+import json
+import yaml
 
 BARN_CONFIG_PATH=["~/.barn.cfg", "./barn.cfg", "/etc/ansible/barn.cfg"]
 barn=None
@@ -67,11 +68,11 @@ def main(command_line=None):
 
     # ansible-barn push-variable
     show_parser = actionparsers.add_parser('show', aliases=['push-var'], help='Push a variable through all hosts in a group')
-    show_parser.add_argument('name', action='store', default=None, help='Name of the group/host')
+    show_parser.add_argument('--name', action='store', default=None, help='Name of the group/host')
     show_parser.add_argument('--format','-f', action='store', default="json", help='Format of the output (json,yaml,text)')
-    # show_parser.add_argument('--json', action='store_true', default=None, help='output in json')
-    # show_parser.add_argument('--yaml','--yml', action='store_true', default=None, help='output in yaml')
-    # show_parser.add_argument('--text', action='store_true', default=None, help='output in json')
+    show_parser.add_argument('--json', action='store_true', default=False, help='output in json')
+    show_parser.add_argument('--yaml','--yml', action='store_true', default=False, help='output in yaml')
+    show_parser.add_argument('--text', action='store_true', default=False, help='output in json')
 
 
     args = parser.parse_args(command_line)
@@ -92,9 +93,12 @@ def main(command_line=None):
     elif args.command == "set-variable":
         barn.set_variable(args.name, args.key, args.value)
     elif args.command == "show":
-        barn
-
-
+        if args.format.lower() == "text" or args.text == True:
+            print(barn.export())
+        elif args.format.lower() == "yaml"  or args.format.lower() == "yml" or args.yaml == True:
+            print(yaml.dump(barn.export(), sort_keys=True, indent=2))
+        elif args.format.lower() == "json" or args.json == True:
+            print(json.dumps(barn.export(), sort_keys=True, indent=2))
 
 
 if __name__ == '__main__':
