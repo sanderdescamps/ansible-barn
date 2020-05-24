@@ -86,17 +86,31 @@ class BarnBuilder(object):
     if "BARN_INVENTORY_TYPE" in os.environ:
       self.properties["barn_inventory_type"] = os.environ["BARN_INVENTORY_TYPE"]
 
-  def connect(self):
+  def load_extra_vars(self,vars):
+    for k,v in vars.items():
+      if v is not None:
+        self.properties[k]=v
+
+
+
+  def __connect(self):
     if "barn_inventory_type" not in self.properties or self.properties["barn_inventory_type"].lower() == "mongodb": 
+      if "barn_port" not in self.properties or self.properties["barn_port"] is None: 
+        self.properties["barn_port"] = "27017"
       self.barn=MongoInventoryDB(self.properties["barn_hostname"],port=self.properties["barn_port"],username=self.properties["barn_user"],password=self.properties["barn_password"])
     elif self.properties["barn_inventory_type"].lower() == "elastic":
+      if "barn_port" not in self.properties or self.properties["barn_port"] is None: 
+        self.properties["barn_port"] = "9200"
       self.barn=ElasticInventoryDB(self.properties["barn_hostname"],port=self.properties["barn_port"],username=self.properties["barn_user"],password=self.properties["barn_password"])
     else:
       raise BarnTypeNotSupported
 
+  def reconnect(self):
+    raise NotImplementedError
+
   def get_instance(self):
     if self.barn is None:
-      self.connect()
+      self.__connect()
     return self.barn
 
 barnBuilder = BarnBuilder()
