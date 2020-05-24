@@ -13,9 +13,9 @@ except ImportError:
 
 
 class ElasticInventoryDB(InventoryDB):
-    def __init__(self, host, host_port):
-        self.es_host = host
-        self.es_host_port = host_port
+    def __init__(self, hostname, port=9200, username=None, password=None):
+        self.es_host = hostname
+        self.es_host_port = port
         self.es = Elasticsearch(hosts=[{'host': self.es_host, 'port': self.es_host_port}])
 
     def sample_init(self):
