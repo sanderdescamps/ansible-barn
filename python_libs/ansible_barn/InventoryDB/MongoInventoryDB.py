@@ -57,8 +57,8 @@ class MongoInventoryDB(InventoryDB):
       self.mdb["inventory"]["group_inventory"].update_one({"name": name}, {"$set": {"vars": {key: value}}})
 
   def get_vars(self,name):
+    res={}
     if self.host_exist(name):
-      res={}
       host = self.mdb["inventory"]["host_inventory"].find_one({ "name": name })
       if "vars" in host and host["vars"] is not None and len(host["vars"]) > 0:
           res = combine_vars(res,host["vars"])
@@ -73,7 +73,6 @@ class MongoInventoryDB(InventoryDB):
           to_process_groups.extend(g["parent_groups"])
     
     elif self.group_exist(name):
-      res={}
       to_process_groups = [name]
       while len(to_process_groups)>0:
         g_name = to_process_groups.pop()
@@ -82,6 +81,8 @@ class MongoInventoryDB(InventoryDB):
           res = combine_vars(res,g["vars"])
         if "parent_groups" in g and g["parent_groups"] is not None and len(g["parent_groups"]) > 0:
           to_process_groups.extend(g["parent_groups"])
+    else:
+      res = None
     return res
 
   def _flush(self):
