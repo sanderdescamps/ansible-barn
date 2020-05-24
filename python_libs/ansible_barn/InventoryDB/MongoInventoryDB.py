@@ -1,5 +1,6 @@
 from ansible_barn.InventoryDB import InventoryDB
 from ansible_barn.InventoryDB import MemberNotFoundError
+from ansible_barn.utils import remove_underscore_keys
 import pymongo 
 import urllib.parse
 import uuid
@@ -7,20 +8,6 @@ from ansible.inventory.host import Host
 from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
 import json
-
-def clean_dir(d):
-  res = {}
-  if type(d)== dict:
-    for k,v in d.items():
-      if k.startswith('_'):
-        pass
-      elif type(v) == dict or type(v) == list:
-        res[k] = clean_dir(v)
-      else:
-        res[k]=v
-  elif type(d)== list:
-    res = list(map(lambda x: clean_dir(x) if type(x)==dict else x, d))    
-  return res
 
 class MongoInventoryDB(InventoryDB):
   def __init__(self, hostname, port=27017, username=None, password=None):
@@ -125,15 +112,15 @@ class MongoInventoryDB(InventoryDB):
   def export(self, name=None):
     if name is None or name.lower() == "all":
       hosts = list(self.mdb["inventory"]["host_inventory"].find())
-      hosts = clean_dir(hosts)
+      hosts = remove_underscore_keys(hosts)
       groups = list(self.mdb["inventory"]["group_inventory"].find())
-      groups = clean_dir(groups)
+      groups = remove_underscore_keys(groups)
       return { "hosts": hosts, "groups": groups}
     elif self.host_exist(name):
       hosts = list(self.mdb["inventory"]["host_inventory"].find({ "name": name }))
-      hosts = clean_dir(hosts)
+      hosts = remove_underscore_keys(hosts)
       return { "hosts": hosts}
     elif self.group_exist(name):
       groups = list(self.mdb["inventory"]["group_inventory"].find({ "name": name }))
-      groups = clean_dir(groups)
+      groups = remove_underscore_keys(groups)
       return { "groups": groups}
