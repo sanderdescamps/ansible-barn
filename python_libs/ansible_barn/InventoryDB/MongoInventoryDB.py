@@ -100,12 +100,6 @@ class MongoInventoryDB(InventoryDB):
       del document["_id"]
       print(json.dumps(document, sort_keys=True, indent=2))
 
-  def __export_host(self, name=None):
-    if name is None or name.lower() == "all":
-      return { "hosts": list(self.mdb["inventory"]["host_inventory"].find({})), "groups": list(self.mdb["inventory"]["group_inventory"].find({}))}
-    elif self.host_exist(name):
-      return { "hosts": list(self.mdb["inventory"]["host_inventory"].find({ "name": name }))}
-
   def export(self, name=None):
     if name is None or name.lower() == "all":
       hosts = list(self.mdb["inventory"]["host_inventory"].find())
