@@ -3,9 +3,6 @@ from ansible_barn.InventoryDB import MemberNotFoundError
 from ansible_barn.utils import remove_underscore_keys
 import pymongo 
 import urllib.parse
-import uuid
-from ansible.inventory.host import Host
-from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
 import json
 
@@ -34,13 +31,13 @@ class MongoInventoryDB(InventoryDB):
 
   def add_host(self, host):
     if type(host) is str: 
-      h = Host(host)
-      self.mdb["inventory"]["host_inventory"].insert_one(h.serialize())
+      h = {"name": host}
+      self.mdb["inventory"]["host_inventory"].insert_one(h)
 
   def add_group(self, group):
     if type(group) is str: 
-      g = Group(group)
-      self.mdb["inventory"]["group_inventory"].insert_one(g.serialize())
+      g = {"name": group}
+      self.mdb["inventory"]["group_inventory"].insert_one(g)
 
   def add_child_group_to_group(self, child_group, parent_group):
     self.mdb["inventory"]["group_inventory"].update_one({ "name": child_group },{ "$addToSet": { "parent_groups": parent_group } })
