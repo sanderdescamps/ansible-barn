@@ -36,6 +36,9 @@ class InventoryDB(object):
   def set_variable(self, name, key, value):
     pass
 
+  def delete_variable(self,name,key):
+    pass
+
   def get_vars(self,name):
     pass
   
