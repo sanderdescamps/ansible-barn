@@ -43,7 +43,7 @@ from ansible.plugins.vars import BaseVarsPlugin
 from ansible.inventory.host import Host
 from ansible.inventory.group import Group
 from ansible.utils.vars import combine_vars
-from ansible_barn.BarnBuilder import barnBuilder
+from ansiblebarn.BarnBuilder import barnBuilder
 from ansible.utils.display import Display
 
 FOUND = {}

@@ -77,7 +77,7 @@ except ImportError:
 import os
 import sys
 import argparse
-from ansible_barn.BarnBuilder import barnBuilder
+from ansiblebarn.BarnBuilder import barnBuilder
 from datetime import datetime
 
 try:

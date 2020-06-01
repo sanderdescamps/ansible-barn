@@ -9,7 +9,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name = "ansible-barn",
+    name = "ansiblebarn",
     version = "0.0.1",
     author = "Sander Descamps",
     author_email = "sander_descamps@hotmail.com",
@@ -17,7 +17,7 @@ setup(
     license = "GNU General Public License v3.0",
     keywords = "Ansible Barn inventory dynamic",
     url = "https://github.com/sanderdescamps/ansible-barn",
-    packages=['ansible_barn', 'tests'],
+    packages=['ansiblebarn', 'tests'],
     long_description=read('README'),
     classifiers=[
         "Development Status :: 3 - Alpha",

@@ -1,10 +1,10 @@
 import argparse
 import configparser
 import os.path
-from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
+from ansiblebarn.InventoryDB.MongoInventoryDB import MongoInventoryDB
 import json
 import yaml
-from ansible_barn.BarnBuilder import barnBuilder
+from ansiblebarn.BarnBuilder import barnBuilder
 
 BARN_CONFIG_PATH=["~/.barn.cfg", "./barn.cfg", "/etc/ansible/barn.cfg"]
 
