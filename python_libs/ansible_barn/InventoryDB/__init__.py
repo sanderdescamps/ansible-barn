@@ -1,3 +1,5 @@
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
 import pymongo 
 import urllib.parse
 import uuid
@@ -6,10 +8,13 @@ from ansible.inventory.host import Host
 class MemberNotFoundError(Exception):
     """Member not found in InventoryDB"""
 
-class InventoryDB(object):
-  from __future__ import (absolute_import, division, print_function)
-  __metaclass__ = type
+    def __init__(self):
+        self.message = "Entity can't be found in the inventory database"
 
+class BarnTypeNotSupported(Exception):
+    """Barn type is not supported"""
+
+class InventoryDB(object):
   def host_exist(self,name):
     pass
 
