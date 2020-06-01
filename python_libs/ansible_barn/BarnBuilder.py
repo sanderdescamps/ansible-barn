@@ -1,6 +1,7 @@
 from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
 from ansible_barn.InventoryDB.ElasticInventoryDB import ElasticInventoryDB
 from ansible_barn.InventoryDB import BarnTypeNotSupported
+from ansible_barn.BarnConfigManager import BarnConfigManager, find_barn_config_file
 import configparser
 import os
 
@@ -51,67 +52,28 @@ import os
 
 class BarnBuilder(object):
   def __init__(self):
-    self.properties = {}
     self.barn = None
+    self.config_manager = BarnConfigManager()
+    cfg_path=find_barn_config_file()
+    self.config_manager.load_config_file(cfg_path)
   
-  def load_config_file(self, path):
-    """
-      Load ini config file
-    """
-    if os.path.isfile(path):
-      config = configparser.ConfigParser()
-      config.read(path)
-      for k,v in config.items('defaults'):
-          self.properties[k] = v
-  
-  def load_config_files(self,paths):
-    """
-      Load multiple config files, input path-list from low to high priority
-    """
-    for p in paths:
-      self.load_config_file(p)
-
-  def load_env_vars(self):
-    """
-      Load properties stored in the environment variables
-    """
-    if "BARN_USER" in os.environ:
-      self.properties["barn_user"] = os.environ["BARN_USER"]
-    if "BARN_PASSWORD" in os.environ:
-      self.properties["barn_password"] = os.environ["BARN_PASSWORD"]
-    if "BARN_HOSTNAME" in os.environ:
-      self.properties["barn_hostname"] = os.environ["BARN_HOSTNAME"]
-    if "BARN_PORT" in os.environ:
-      self.properties["barn_port"] = os.environ["BARN_PORT"]
-    if "BARN_INVENTORY_TYPE" in os.environ:
-      self.properties["barn_inventory_type"] = os.environ["BARN_INVENTORY_TYPE"]
-
-  def load_extra_vars(self,vars):
-    for k,v in vars.items():
-      if v is not None:
-        self.properties[k]=v
-
-
-
-  def __connect(self):
-    if "barn_inventory_type" not in self.properties or self.properties["barn_inventory_type"].lower() == "mongodb": 
-      if "barn_port" not in self.properties or self.properties["barn_port"] is None: 
-        self.properties["barn_port"] = "27017"
-      self.barn=MongoInventoryDB(self.properties["barn_hostname"],port=self.properties["barn_port"],username=self.properties["barn_user"],password=self.properties["barn_password"])
-    elif self.properties["barn_inventory_type"].lower() == "elastic":
-      if "barn_port" not in self.properties or self.properties["barn_port"] is None: 
-        self.properties["barn_port"] = "9200"
-      self.barn=ElasticInventoryDB(self.properties["barn_hostname"],port=self.properties["barn_port"],username=self.properties["barn_user"],password=self.properties["barn_password"])
-    else:
-      raise BarnTypeNotSupported
-
   def reconnect(self):
     raise NotImplementedError
 
   def get_instance(self):
-    if self.barn is None:
-      self.__connect()
-    return self.barn
+    if self.config_manager.get_config_value("barn_inventory_type") == "mongodb":
+      return MongoInventoryDB(self.config_manager.get_config_value("barn_hostname"),
+          port=self.config_manager.get_config_value("barn_port"),
+          username=self.config_manager.get_config_value("barn_user"),
+          password=self.config_manager.get_config_value("barn_password"))
+    elif self.config_manager.get_config_value("barn_inventory_type") == "elastic":
+      return MongoInventoryDB(self.config_manager.get_config_value("barn_hostname"),
+          port=self.config_manager.get_config_value("barn_port"),
+          username=self.config_manager.get_config_value("barn_user"),
+          password=self.config_manager.get_config_value("barn_password"))
+    else:
+      raise BarnTypeNotSupported
+
 
 barnBuilder = BarnBuilder()
     
