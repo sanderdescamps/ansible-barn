@@ -94,7 +94,7 @@ def run_module():
         user=dict(type='str', require=False, default=None),
         password=dict(type='str', require=False, default=None),
         port=dict(type='int', require=False, default=9200),
-        state=dict(type='str', required=False, default='present'),
+        state=dict(type='str', required=False, choices=("present","absent","show"), default='present'),
         barn_type=dict(type='str', require=False, choices=("mongodb","elastic"), default="mongodb")
     )
 
