@@ -77,11 +77,7 @@ except ImportError:
 import os
 import sys
 import argparse
-from elasticsearch import Elasticsearch
-from ansible_barn.InventoryDB import InventoryDB
-from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
-
-
+from ansible_barn.BarnBuilder import barnBuilder
 from datetime import datetime
 
 try:
@@ -98,9 +94,11 @@ def run_module():
         user=dict(type='str', require=False, default=None),
         password=dict(type='str', require=False, default=None),
         port=dict(type='int', require=False, default=9200),
-        state=dict(type='str', required=False, default='present')
+        state=dict(type='str', required=False, default='present'),
+        barn_type=dict(type='str', require=False, choices=("mongodb","elastic"), default="mongodb")
     )
 
+    
     # seed the result dict in the object
     # we primarily care about changed and state
     # change is if this module effectively modified the target
@@ -126,15 +124,18 @@ def run_module():
     # state with no modifications
     if module.check_mode:
         module.exit_json(**result)
+  
+    # barnBuilder.load_config_file()
     
-    barn = MongoInventoryDB( module.params['host'], module.params['port'], username=module.params['user'], password=module.params['password'])
-    res = barn.get_host("srvdns01.myhomecloud.be").get_vars()
+    # prop = { k: module.params[k] for k in ["barn_user","barn_password","barn_hostname","barn_port", "barn_inventory_type"] if module.params[k] is not None }
+    # barnBuilder.load_extra_vars(prop)
+    
     
     
     
     # manipulate or modify the state as needed (this is going to be the
     # part where your module will do what it needs to do)
-    result['original_message'] = res
+    result['original_message'] = os.path.dirname(os.path.abspath(__file__))
     result['message'] = 'goodbye'
 
     # use whatever logic you need to determine whether or not this module
