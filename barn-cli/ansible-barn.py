@@ -4,39 +4,9 @@ import os.path
 from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
 import json
 import yaml
+from ansible_barn.BarnBuilder import barnBuilder
 
 BARN_CONFIG_PATH=["~/.barn.cfg", "./barn.cfg", "/etc/ansible/barn.cfg"]
-barn=None
-
-def __read_cfg_files():
-    res = {}
-    for p in BARN_CONFIG_PATH:
-        if os.path.isfile(p):
-            config = configparser.ConfigParser()
-            config.read(p)
-            for k,v in config.items('defaults'):
-                res[k] = v
-    return res
-
-def __read_env_vars():
-    res = {}
-    if "BARN_USER" in os.environ:
-        res["barn_user"] = os.environ["BARN_USER"]
-    if "BARN_PASSWORD" in os.environ:
-        res["barn_password"] = os.environ["BARN_PASSWORD"]
-    if "BARN_HOSTNAME" in os.environ:
-        res["barn_hostname"] = os.environ["BARN_HOSTNAME"]
-    return res
-
-def load_properties():
-    prop=__read_cfg_files()
-    prop.update(__read_env_vars())
-    return prop
-
-def connect(prop):
-    global barn
-    barn=MongoInventoryDB(prop["barn_hostname"],port=prop["barn_port"],username=prop["barn_user"],password=prop["barn_password"])
-    
 
 def main(command_line=None): 
     parser = argparse.ArgumentParser()
@@ -44,8 +14,8 @@ def main(command_line=None):
     barn_auth.add_argument("--barn_user",action="store", default=None)
     barn_auth.add_argument("--barn_password",action="store", default=None)
     barn_auth.add_argument("--barn_hostname",action="store", default=None)
-    barn_auth.add_argument("--barn_port",action="store", default=27017)
-
+    barn_auth.add_argument("--barn_port",action="store", default=None)
+    barn_auth.add_argument("--barn_inventory_type",action="store",choices=('mongodb', 'elastic'), default=None, help='Barn database type (default: mongodb)')
     actionparsers = parser.add_subparsers(help='commands',dest='command')
 
     # ansible-barn add 
@@ -67,7 +37,7 @@ def main(command_line=None):
     push_variable_parser.add_argument('value', action='store',help='Variable value')
 
     # ansible-barn push-variable
-    show_parser = actionparsers.add_parser('show', aliases=['push-var'], help='Push a variable through all hosts in a group')
+    show_parser = actionparsers.add_parser('show', help='Push a variable through all hosts in a group')
     show_parser.add_argument('name', action='store', default=None, nargs="?", help='Name of the group/host')
     show_parser.add_argument('--format','-f', action='store', default="json", help='Format of the output (json,yaml,text)')
     show_parser.add_argument('--json', action='store_true', default=False, help='output in json')
@@ -76,11 +46,11 @@ def main(command_line=None):
 
     args = parser.parse_args(command_line)
     
-    prop = load_properties()
     v_args = vars(args)
-    cli_prop = { k: v_args[k] for k in ["barn_user","barn_password","barn_hostname","barn_port"] if v_args[k] is not None }
-    prop.update(cli_prop)
-    connect(prop)
+    cli_prop = { k: v_args[k] for k in ["barn_user","barn_password","barn_hostname","barn_port", "barn_inventory_type"] if v_args[k] is not None }
+    barnBuilder.config_manager.load_extra_vars(cli_prop)
+
+    barn = barnBuilder.get_instance()
 
     
     
@@ -89,7 +59,7 @@ def main(command_line=None):
             barn.add_host(args.name)
         else:
             barn.add_group(args.name)
-    elif args.command == "set-variable":
+    elif args.command == "set-variable" or args.command == "set-var":
         barn.set_variable(args.name, args.key, args.value)
     elif args.command == "show":
         if args.format.lower() == "text" or args.text == True:
@@ -98,7 +68,8 @@ def main(command_line=None):
             print(yaml.dump(barn.export(args.name), sort_keys=True, indent=2))
         elif args.format.lower() == "json" or args.json == True:
             print(json.dumps(barn.export(args.name), sort_keys=True, indent=2))
-
+    else: 
+        print("command %s not supported"%(args.command))
 
 if __name__ == '__main__':
     main()
