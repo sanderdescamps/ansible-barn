@@ -1,12 +1,12 @@
-from ansible_barn.BarnBuilder import barnBuilder
+from ansiblebarn.BarnBuilder import barnBuilder
 
 if __name__ == '__main__':
-    barnBuilder.load_extra_vars(
-      { "barn_user": "admin-user",
-        "barn_password": "jfldmdpdeiehjkHGSthjjhDdfghhFdf",
-        "barn_hostname": "192.168.56.3",
-        "barn_port": 27017,
-        "barn_inventory_type": "mongodb",})
+    # barnBuilder.load_extra_vars(
+    #   { "barn_user": "admin-user",
+    #     "barn_password": "jfldmdpdeiehjkHGSthjjhDdfghhFdf",
+    #     "barn_hostname": "192.168.56.3",
+    #     "barn_port": 27017,
+    #     "barn_inventory_type": "mongodb",})
     barn = barnBuilder.get_instance()
     barn._flush()
     barn.add_host("srvplex01.myhomecloud.be")

@@ -1,8 +1,8 @@
-from ansible_barn.InventoryDB.MongoInventoryDB import MongoInventoryDB
+from ansiblebarn.InventoryDB.MongoInventoryDB import MongoInventoryDB
 
 if __name__ == '__main__':
-    inventory_database=MongoInventoryDB('192.168.1.39', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")
-    #inventory_database=MongoInventoryDB('192.168.1.39', 27017, "mongo-user", "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjdf")
+    inventory_database=MongoInventoryDB('192.168.56.3', 27017, "admin-user", "jfldmdpdeiehjkHGSthjjhDdfghhFdf")
+    #inventory_database=MongoInventoryDB('192.168.56.3', 27017, "mongo-user", "mDFKMDFJAMZLFNQMDSLFIHADFANMDFJAlEFjkdfjoqjdf")
 
     inventory_database._flush()
     inventory_database.add_host("srvplex01.myhomecloud.be")
