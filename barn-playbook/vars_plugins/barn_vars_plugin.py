@@ -49,20 +49,20 @@ from ansible.utils.display import Display
 FOUND = {}
 display=Display()
 
-def load_barn_properties():
-  b_path=os.path.dirname(os.path.abspath(__file__))
-  if b_path.endswith("vars_plugins"):
-    b_path = b_path[:-13]
-  display.v("Using %s as config file for ansible-barn"%("~/.barn.cfg"))
-  barnBuilder.load_config_file("~/.barn.cfg")
-  display.v("Using %s as config file for ansible-barn"%(b_path +"/barn.cfg"))
-  barnBuilder.load_config_file(b_path +"/barn.cfg")
-  display.v("Using %s as config file for ansible-barn"%("/etc/ansible/barn.cfg"))
-  barnBuilder.load_config_file("/etc/ansible/barn.cfg")
-  display.v("Using %s environment variables for ansible-barn")
-  barnBuilder.load_env_vars()
+# def load_barn_properties():
+#   b_path=os.path.dirname(os.path.abspath(__file__))
+#   if b_path.endswith("vars_plugins"):
+#     b_path = b_path[:-13]
+#   display.v("Using %s as config file for ansible-barn"%("~/.barn.cfg"))
+#   barnBuilder.load_config_file("~/.barn.cfg")
+#   display.v("Using %s as config file for ansible-barn"%(b_path +"/barn.cfg"))
+#   barnBuilder.load_config_file(b_path +"/barn.cfg")
+#   display.v("Using %s as config file for ansible-barn"%("/etc/ansible/barn.cfg"))
+#   barnBuilder.load_config_file("/etc/ansible/barn.cfg")
+#   display.v("Using %s environment variables for ansible-barn")
+#   barnBuilder.load_env_vars()
 
-load_barn_properties()
+# load_barn_properties()
 
 class VarsModule(BaseVarsPlugin):
 
