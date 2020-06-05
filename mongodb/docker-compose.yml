@@ -4,7 +4,7 @@ services:
     database:
         image: mongo:latest
         container_name: mongodb
-        #restart: always
+        restart: always
         environment:
             MONGO_INITDB_ROOT_USERNAME: admin-user
             MONGO_INITDB_ROOT_PASSWORD: jfldmdpdeiehjkHGSthjjhDdfghhFdf
