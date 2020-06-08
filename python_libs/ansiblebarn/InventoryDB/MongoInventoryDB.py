@@ -60,6 +60,16 @@ class MongoInventoryDB(InventoryDB):
       v[key]=value
       self.mdb["inventory"]["group_inventory"].update_one({"name": name}, {"$set": {"vars": v}})
 
+  def delete_variable(self,name,key):
+    if self.host_exist(name):
+      v=self.mdb["inventory"]["host_inventory"].find_one({"name": name})["vars"]
+      del v[key]
+      self.mdb["inventory"]["host_inventory"].update_one({"name": name}, {"$set": {"vars": v}})
+    elif self.group_exist(name):
+      v=self.mdb["inventory"]["group_inventory"].find_one({"name": name})["vars"]
+      del v[key]
+      self.mdb["inventory"]["group_inventory"].update_one({"name": name}, {"$set": {"vars": v}})
+
   def get_vars(self,name):
     res={}
     if self.host_exist(name):
