@@ -8,7 +8,6 @@ def find_barn_config_file():
   potential_paths = []
 
   cwd = os.getcwd()
-  print(cwd)
   cwd_cfg = os.path.join(cwd, "barn.cfg")
   potential_paths.append(cwd_cfg)
 
