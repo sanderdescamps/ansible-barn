@@ -1,0 +1,14 @@
+
+## Library comands
+
+Enter virtual environment
+
+    source pythonenv/bin/activate
+
+Add custom library to virtual python environment
+
+1. Enter virtual environment
+2. Create setup.py file
+3. Run 
+
+        python setup.py develop

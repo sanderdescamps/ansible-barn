@@ -52,11 +52,11 @@ class MongoInventoryDB(InventoryDB):
 
   def set_variable(self, name, key, value):
     if self.host_exist(name):
-      v=self.mdb["inventory"]["host_inventory"].find_one({"name": name})["vars"]
+      v=self.mdb["inventory"]["host_inventory"].find_one({"name": name}).get("vars",{})
       v[key]=value
       self.mdb["inventory"]["host_inventory"].update_one({"name": name}, {"$set": {"vars": v}})
     elif self.group_exist(name):
-      v=self.mdb["inventory"]["group_inventory"].find_one({"name": name})["vars"]
+      v=self.mdb["inventory"]["group_inventory"].find_one({"name": name}).get("vars",{})
       v[key]=value
       self.mdb["inventory"]["group_inventory"].update_one({"name": name}, {"$set": {"vars": v}})
 

@@ -24,6 +24,17 @@ def main(command_line=None):
     add_parser.add_argument('name', action='store', help='Name of the host or group')
     add_parser.add_argument('--force-new','-f', action='store_true', help='Remove old host/group and add new one')
 
+    # ansible-barn var-remove
+    remove_variable_parser = actionparsers.add_parser('remove-var', help='Remove variable from host/group')
+    remove_variable_parser.add_argument('name', action='store', help='Name of the host or group')
+    remove_variable_parser.add_argument('key', action='store', help='Name of the variable')
+    remove_variable_parser.add_argument('--force','-f', action='store_true', help='Remove host of group without confirmation')
+
+    # ansible-barn destroy
+    destroy_parser = actionparsers.add_parser('destroy', help='Remove a host/group entirely')
+    destroy_parser.add_argument('name', action='store', help='Name of the host or group')
+    destroy_parser.add_argument('--force','-f', action='store_true', help='Remove host of group without confirmation')
+
     # ansible-barn set-variable
     set_variable_parser = actionparsers.add_parser('set-variable', aliases=['set-var'], help='Assign variable to a host or a group')
     set_variable_parser.add_argument('name', action='store', help='Name of the host/group')
@@ -52,24 +63,29 @@ def main(command_line=None):
 
     barn = barnBuilder.get_instance()
 
-    
-    
-    if args.command == "add":
-        if args.host_or_group == "host": 
-            barn.add_host(args.name)
-        else:
-            barn.add_group(args.name)
-    elif args.command == "set-variable" or args.command == "set-var":
-        barn.set_variable(args.name, args.key, args.value)
-    elif args.command == "show":
-        if args.format.lower() == "text" or args.text == True:
-            print(barn.export(args.name))
-        elif args.format.lower() == "yaml"  or args.format.lower() == "yml" or args.yaml == True:
-            print(yaml.dump(barn.export(args.name), sort_keys=True, indent=2))
-        elif args.format.lower() == "json" or args.json == True:
-            print(json.dumps(barn.export(args.name), sort_keys=True, indent=2))
-    else: 
-        print("command %s not supported"%(args.command))
+    try:
+        if args.command == "add":
+            if args.host_or_group == "host": 
+                barn.add_host(args.name)
+            else:
+                barn.add_group(args.name)
+        elif args.command == "set-variable" or args.command == "set-var":
+            barn.set_variable(args.name, args.key, args.value)
+        elif args.command == "show":
+            if args.format.lower() == "text" or args.text == True:
+                print(barn.export(args.name))
+            elif args.format.lower() == "yaml"  or args.format.lower() == "yml" or args.yaml == True:
+                print(yaml.dump(barn.export(args.name), sort_keys=True, indent=2))
+            elif args.format.lower() == "json" or args.json == True:
+                print(json.dumps(barn.export(args.name), sort_keys=True, indent=2))
+        elif args.command == "remove-var":
+            barn.delete_variable(args.name, args.key)
+        elif args.command == "destroy":
+            raise NotImplementedError
+        else: 
+            print("command %s not supported"%(args.command))
+    except Exception:
+        print("Barn database server unavailable")
 
 if __name__ == '__main__':
     main()

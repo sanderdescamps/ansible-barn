@@ -26,7 +26,7 @@ db = MongoEngine(app)
 class User(db.Document):
     public_id = StringField(required=True)
     name = StringField()
-    username = StringField(required=True)
+    username = StringField(required=True, unique=True)
     password = StringField()
     admin = BooleanField(default=False)
 
@@ -62,7 +62,6 @@ def token_required(f):
         except Exception:
             return jsonify({'message': 'token is invalid'})
 
-
         return f(current_user, *args,  **kwargs)
     return decorator
 
@@ -84,7 +83,9 @@ def login_user():
     auth = request.authorization
 
     if not auth or not auth.username or not auth.password:
-        return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+        return make_response('could not verify', 401, {
+            'WWW.Authentication': 'Basic realm: "login required"'
+        })
 
     # user = Users.query.filter_by(name=auth.username).first()
     user = User.objects(username=auth.username)[0]
@@ -94,7 +95,9 @@ def login_user():
         ) + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
         return jsonify({'token': token.decode('UTF-8')})
 
-    return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+    return make_response('could not verify', 401, {
+        'WWW.Authentication': 'Basic realm: "login required"'
+    })
 
 
 @app.route('/user', methods=['GET'])
