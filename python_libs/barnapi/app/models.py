@@ -43,12 +43,6 @@ class User(db.Document):
         return '<User %r>' % (self.name)
     
 
-
-class Author(db.Document):
-    name = IntField(required=True, unique=True)
-    country = StringField(required=True)
-    user_id = IntField(required=True)
-
 class Node(db.Document):
     name=StringField(required=True, unique=True)
     vars=DictField(default={})
