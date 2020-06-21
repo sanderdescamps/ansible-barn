@@ -42,10 +42,11 @@ def authenticate(*roles):
                 missing_roles = [
                     r for r in roles if r not in current_user.roles]
             print(len(missing_roles))
-            if len(missing_roles) < 1:
-                return f(current_user, *args,  **kwargs)
-            else:
-                return jsonify({'message': 'Not permited, missing roles (%s)' % (','.join(missing_roles))})
+            if len(missing_roles) > 0:
+                return jsonify({
+                    'message': 'Not permited, missing roles (%s)' % (','.join(missing_roles))
+                    })
+            return f(current_user, *args, **kwargs)
 
         return decorator
     return require_token
@@ -57,7 +58,8 @@ def signup_user():
     hashed_password = generate_password_hash(data['password'], method='sha256')
 
     new_user = User(public_id=str(uuid.uuid4()),
-                    name=data['name'], username=data['username'], password=hashed_password, admin=False)
+                    name=data['name'], username=data['username'], 
+                    password=hashed_password, admin=False)
     new_user.save()
 
     return jsonify({'message': 'registered successfully'})
