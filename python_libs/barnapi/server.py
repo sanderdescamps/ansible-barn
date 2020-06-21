@@ -84,21 +84,11 @@ def login_user():
     })
 
 
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def get_all_users():
     users = User.objects()
+    return jsonify({"result":users.only("public_id", "name", "password_hash").exclude("id")})
 
-    result = []
-
-    for user in users:
-        user_data = {}
-        user_data['public_id'] = user.public_id
-        user_data['name'] = user.name
-        user_data['password'] = user.password
-
-        result.append(user_data)
-
-    return jsonify({'users': result})
 
 
 @app.route('/hostadd', methods=['PUT'])
