@@ -156,18 +156,23 @@ def group_add(current_user):
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
     
+    parentgroups=data.get("parent_groups",None)
+    if parentgroups is not None:
+        o_parentgroup=Group.objects(name__in=parentgroups)
+        for nf in Group.objects(name__nin=parentgroups):
+            warning.append("Could not find parent group %s"%nf)
+    else:
+        o_parentgroup=None
 
-    parentgroups=data.get("parentgroups",None)
-    o_parentgroup=Group.objects(name__in=parentgroups)
-    for nf in Group.objects(name__nin=parentgroups):
-      warning.append("Could not find parent group %s"%nf)
-
-    childgroups=data.get("parentgroups",None)
-    o_childgroups=Group.objects(name__in=childgroups)
-    for nf in Group.objects(name__nin=childgroups):
-      warning.append("Could not find child group %s"%nf)
+    childgroups=data.get("child_groups",None)
+    if childgroups is not None:
+        o_childgroups=Group.objects(name__in=childgroups)
+        for nf in Group.objects(name__nin=childgroups):
+            warning.append("Could not find child group %s"%nf)
+    else:
+        o_childgroups = None
     
-    Group(name=data.get('name'),vars=data.get('vars', {}), childgroups=o_childgroups, parentgroups=o_parentgroup).save()
+    Group(name=data.get('name'),vars=data.get('vars', {}), child_groups=o_childgroups, parent_groups=o_parentgroup).save()
     return jsonify({'message': 'Group Added'})
 
 if __name__ == '__main__':
