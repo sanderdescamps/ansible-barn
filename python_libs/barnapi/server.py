@@ -1,14 +1,13 @@
-from flask import request, jsonify, make_response
-from flask_mongoengine import MongoEngine
-from mongoengine import StringField, IntField, BooleanField
+
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 import jwt
 import datetime
 from functools import wraps
-
+from flask import request, jsonify, make_response
 from app import app
-from app.models import User, Host, Group
+from app.models import User, Role, Host, Group
+from app.debug import db_init, db_flush
 
 def authenticate(roles=None):
     def require_token(f):
@@ -19,20 +18,27 @@ def authenticate(roles=None):
 
             if 'x-access-tokens' in request.headers:
                 token = request.headers['x-access-tokens']
-
-            if not token:
+            print(token)
+            if not token or token == "":
                 return jsonify({'message': 'a valid token is missing'})
 
             try:
                 data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
-                current_user = User.objects(public_id=data.get("public_id")).first()
-            except Exception:
+                current_user = User.objects(public_id=data.get("public_id")).first()   
+            except jwt.exceptions.InvalidSignatureError:
                 return jsonify({'message': 'token is invalid'})
+            
+            
+            if current_user is None:
+                return jsonify({'message': 'No valid token'})
 
-            missing_roles=[r for r in roles if r not in current_user.roles]
-            if "admin" in current_user.roles:
-              missing_roles=[]
-            if len(missing_roles) > 0:
+            missing_roles = None
+            if (roles is None) or (len(roles) == 0) or ( "Admin" in current_user.roles):
+                missing_roles = []
+            else:
+                missing_roles = [r for r in roles if r not in current_user.roles]
+            print(len(missing_roles))
+            if len(missing_roles) < 1:
               return f(current_user, *args,  **kwargs)
             else:
               return jsonify({'message': 'Not permited, missing roles (%s)'%(','.join(missing_roles))})
@@ -86,54 +92,10 @@ def get_all_users():
         user_data['public_id'] = user.public_id
         user_data['name'] = user.name
         user_data['password'] = user.password
-        user_data['admin'] = user.admin
 
         result.append(user_data)
 
     return jsonify({'users': result})
-
-
-@app.route('/authors', methods=['GET', 'POST'])
-@authenticate()
-def get_authors(current_user):
-    authors = Author.objects()
-
-    output = []
-
-    for author in authors:
-        author_data = {}
-        author_data['name'] = author.name
-        author_data['book'] = author.book
-        author_data['country'] = author.country
-        author_data['booker_prize'] = author.booker_prize
-        output.append(author_data)
-
-    return jsonify({'list_of_authors': output})
-
-
-@app.route('/authors', methods=['POST', 'GET'])
-@authenticate()
-def create_author(current_user):
-    data = request.get_json()
-
-    new_authors = Author(
-        name=data['name'], country=data['country'], user_id=current_user.id)
-    new_authors.save()
-
-    return jsonify({'message': 'new author created'})
-
-
-@app.route('/authors/<name>', methods=['DELETE'])
-@authenticate()
-def delete_author(current_user, name):
-    author = Author.objects(name=name, user_id=current_user.id).first()
-    # author = Author.query.filter_by(name=name, user_id=current_user.id).first()
-    if not author:
-        return jsonify({'message': 'author does not exist'})
-
-    author.save()
-
-    return jsonify({'message': 'Author deleted'})
 
 @app.route('/hostadd', methods=['PUT'])
 @authenticate(['AddHost'])
@@ -147,29 +109,70 @@ def host_add(current_user):
 @app.route('/groupadd', methods=['PUT'])
 @authenticate(['AddGroup'])
 def group_add(current_user):
-    warning=[]
+    warning = []
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
     
-    parentgroups=data.get("parent_groups",None)
+    group = Group(name=data.get('name'),vars=data.get('vars', {}))
+    group.save()
+    parentgroups = data.get("parent_groups",None)
     if parentgroups is not None:
-        o_parentgroup=Group.objects(name__in=parentgroups)
-        for nf in Group.objects(name__nin=parentgroups):
-            warning.append("Could not find parent group %s"%nf)
-    else:
-        o_parentgroup=None
+        o_parentgroup = Group.objects(name__in=parentgroups)
+        if o_parentgroup is not None:
+            group.parent_groups.extend(o_parentgroup)
+            for g in o_parentgroup:
+                g.child_groups.append(group)
+                g.save()
+        for not_found in Group.objects(name__nin=parentgroups):
+            warning.append("Could not find parent group %s"%(not_found))
 
-    childgroups=data.get("child_groups",None)
+    childgroups = data.get("child_groups",None)
     if childgroups is not None:
-        o_childgroups=Group.objects(name__in=childgroups)
-        for nf in Group.objects(name__nin=childgroups):
-            warning.append("Could not find child group %s"%nf)
-    else:
-        o_childgroups = None
+        o_childgroups = Group.objects(name__in=childgroups)
+        if o_childgroups is not None:
+            group.child_groups.extend(o_childgroups)
+            for g in o_childgroups:
+                g.parent_groups.append(group)
+                g.save()
+        for not_found in Group.objects(name__nin=childgroups):
+            warning.append("Could not find child group %s"%(not_found))
     
-    Group(name=data.get('name'),vars=data.get('vars', {}), child_groups=o_childgroups, parent_groups=o_parentgroup).save()
+    group.save()
     return jsonify({'message': 'Group Added'})
+
+@app.route('/init', methods=['PUT'])
+@authenticate()
+def init(current_user):
+    db_init()
+    return  jsonify({'message': 'Database has been reseted'})
+
+
+@app.route('/flush', methods=['DELETE'])
+@authenticate(["admin"])
+def flush(current_user):
+    db_flush()
+    return  jsonify({'message': 'Database has been cleared'})
+
+@app.route('/queryhost', methods=['GET','POST'])
+@authenticate(["ReadOnly"])
+def query_host(current_user):
+    data = request.get_json()
+    if "name" not in data:
+        return jsonify({'message': ''''"name" required argument'''})
+    if isinstance(data.get("name"),str):
+        data["name"] = [data.get("name")]
+    o_hosts = Host.objects(name__in=data.get("name"))
+
+    if data.get("hide_id",True):
+        o_hosts = o_hosts.exclude("id")
+
+    if o_hosts is not None:
+        return jsonify(o_hosts)
+    else:
+        return  jsonify({'var': 'Host not found'})
+
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
