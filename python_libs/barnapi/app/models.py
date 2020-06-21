@@ -40,6 +40,8 @@ class User(db.Document):
 
     def __repr__(self):
         return '<User %r>' % (self.name)
+    
+
 
 class Author(db.Document):
     name = IntField(required=True, unique=True)
@@ -58,3 +60,67 @@ class Group(db.Document):
     parent_groups=ListField(ReferenceField('Group'))
     child_groups=ListField(ReferenceField('Group'))
 
+    @deprecated
+    def addChildGroup(self,group_name):
+        """
+            Add a group as a child group
+
+            Parameters:
+            group_name (string): name of the group
+
+            Returns:
+            bool:returns True if group is added to group
+        """
+        o_childgroup = Group.objects(name=group_name).first()
+        if o_childgroup is not None:
+            self.child_groups.append(o_childgroup).save()
+            o_childgroup.parent_groups.append(self).save()
+            return True
+        else:
+            return False
+
+    def addChildGroupObject(self,o_groups):
+        """
+            Add list of groups as child groups
+
+            Parameters:
+            o_groups (list(Group)): list of child group objects
+
+        """
+
+        self.child_groups.extend(o_groups).save()
+        for g in o_groups:
+            g.parent_groups.append(self).save()
+
+
+    @deprecated
+    def addParentGroup(self,group_name):
+        """
+            Add a group as a parent group
+
+            Parameters:
+            group_name (string): name of the group
+
+            Returns:
+            bool:returns True if group is added to group
+        """
+        o_parentgroup = Group.objects(name=group_name).first()
+        if o_parentgroup is not None:
+            self.parent_groups.append(o_parentgroup).save()
+            o_parentgroup.child_groups.append(self).save()
+            return True
+        else:
+            return False
+        
+    def addparentGroupObject(self,o_groups):
+        """
+            Add list of groups as parent groups
+
+            Parameters:
+            o_groups (list(Group)): list of parent group objects
+
+        """
+
+        self.parent_groups.extend(o_groups).save()
+        for g in o_groups:
+            g.child_groups.append(self).save()
