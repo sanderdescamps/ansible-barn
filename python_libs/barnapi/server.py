@@ -1,12 +1,12 @@
 
-from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
-import jwt
 import datetime
 from functools import wraps
+import jwt
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import request, jsonify, make_response
 from app import app
-from app.models import User, Role, Host, Group, Node
+from app.models import User, Host, Group, Node
 from app.debug import db_init, db_flush
 
 
