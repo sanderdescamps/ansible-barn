@@ -6,7 +6,7 @@ import datetime
 from functools import wraps
 from flask import request, jsonify, make_response
 from app import app
-from app.models import User, Role, Host, Group
+from app.models import User, Role, Host, Group, Node
 from app.debug import db_init, db_flush
 
 
@@ -162,21 +162,21 @@ def flush(current_user):
     return jsonify({'message': 'Database has been cleared'})
 
 
-@app.route('/queryhost', methods=['GET', 'POST'])
+@app.route('/query', methods=['GET', 'POST'])
 @authenticate("ReadOnly")
-def query_host(current_user):
+def query(current_user):
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
     if isinstance(data.get("name"), str):
         data["name"] = [data.get("name")]
-    o_hosts = Host.objects(name__in=data.get("name"))
+    o_node = Node.objects(name__in=data.get("name"))
 
     if data.get("hide_id", True):
-        o_hosts = o_hosts.exclude("id")
+        o_node = o_node.exclude("id")
 
-    if o_hosts is not None:
-        return jsonify(o_hosts)
+    if o_node is not None:
+        return jsonify(o_node)
     else:
         return jsonify({'var': 'Host not found'})
 

@@ -49,14 +49,15 @@ class Author(db.Document):
     country = StringField(required=True)
     user_id = IntField(required=True)
 
-class Host(db.Document):
-    name=StringField(required=True)
+class Node(db.Document):
+    name=StringField(required=True, unique=True)
     vars=DictField(default={})
+    meta = {'allow_inheritance': True}
+
+class Host(Node):
     groups=ListField(default=[])
 
-class Group(db.Document):
-    name=StringField(required=True)
-    vars=DictField(default={})
+class Group(Node):
     hosts=ListField(default=[])
     parent_groups=ListField(ReferenceField('Group'))
     child_groups=ListField(ReferenceField('Group'))
