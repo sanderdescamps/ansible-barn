@@ -15,6 +15,15 @@ class Role(db.Document):
 
     def __str__(self):
         return str(self.name)
+    
+    def __eq__(self,other):
+        if other.__class__ == str:
+            return (str(self.name).lower() == other.lower())
+        else:
+            return (
+                self.__class__ == other.__class__ and
+                str(self.name).lower() == str(other.name).lower()
+                )
 
 class User(db.Document):
     public_id = StringField(default=str(uuid.uuid4()))
