@@ -2,6 +2,7 @@ import uuid
 from mongoengine import StringField, BooleanField, IntField, DictField, ListField, UUIDField, ReferenceField
 from werkzeug.security import generate_password_hash
 from app import db
+from app.app_utils import deprecated
 
 class Role(db.Document):
     name=StringField(required=True)
