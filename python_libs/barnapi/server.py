@@ -144,10 +144,6 @@ def host_add(current_user):
     Host(name=data.get('name'),vars=data.get('vars', {}), groups=data.get("groups",[])).save()
     return jsonify({'message': 'Host Added'})
 
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
-
-
 @app.route('/groupadd', methods=['PUT'])
 @authenticate(['AddGroup'])
 def group_add(current_user):
