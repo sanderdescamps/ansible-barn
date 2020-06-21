@@ -186,13 +186,13 @@ def set_var(current_user):
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
-    o_host = Host.objects(name=data.get("name")).first()
-    if o_host is not None:
-        o_host.vars.update(data.get("vars",{}))
-        o_host.save()
+    o_node = Node.objects(name=data.get("name")).first()
+    if o_node is not None:
+        o_node.vars.update(data.get("vars",{}))
+        o_node.save()
     else:
         return jsonify({'message': 'host not found'})
-    return jsonify({'message': 'add variables to object', "host": o_host })
+    return jsonify({'message': 'add variables to object', "result": o_node })
 
 
 
