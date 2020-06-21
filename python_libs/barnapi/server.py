@@ -9,7 +9,8 @@ from app import app
 from app.models import User, Role, Host, Group
 from app.debug import db_init, db_flush
 
-def authenticate(roles=None):
+
+def authenticate(*roles):
     def require_token(f):
         @wraps(f)
         def decorator(*args, **kwargs):
@@ -24,28 +25,30 @@ def authenticate(roles=None):
 
             try:
                 data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
-                current_user = User.objects(public_id=data.get("public_id")).first()   
+                current_user = User.objects(
+                    public_id=data.get("public_id")).first()
             except jwt.exceptions.InvalidSignatureError:
                 return jsonify({'message': 'token is invalid'})
-            
-            
+            except jwt.exceptions.ExpiredSignatureError:
+                return jsonify({'message': 'token expired'})
+
             if current_user is None:
                 return jsonify({'message': 'No valid token'})
 
             missing_roles = None
-            if (roles is None) or (len(roles) == 0) or ( "Admin" in current_user.roles):
+            if (roles is None) or (len(roles) == 0) or ("Admin" in current_user.roles):
                 missing_roles = []
             else:
-                missing_roles = [r for r in roles if r not in current_user.roles]
+                missing_roles = [
+                    r for r in roles if r not in current_user.roles]
             print(len(missing_roles))
             if len(missing_roles) < 1:
-              return f(current_user, *args,  **kwargs)
+                return f(current_user, *args,  **kwargs)
             else:
-              return jsonify({'message': 'Not permited, missing roles (%s)'%(','.join(missing_roles))})
+                return jsonify({'message': 'Not permited, missing roles (%s)' % (','.join(missing_roles))})
 
         return decorator
     return require_token
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -66,8 +69,8 @@ def login_user():
 
     if not auth or not auth.username or not auth.password:
         return make_response('could not verify', 401, {
-          'WWW.Authentication': 'Basic realm: "login required"'
-          })
+            'WWW.Authentication': 'Basic realm: "login required"'
+        })
 
     user = User.objects(username=auth.username).first()
 
@@ -77,8 +80,8 @@ def login_user():
         return jsonify({'token': token.decode('UTF-8')})
 
     return make_response('could not verify', 401, {
-      'WWW.Authentication': 'Basic realm: "login required"'
-      })
+        'WWW.Authentication': 'Basic realm: "login required"'
+    })
 
 
 @app.route('/user', methods=['GET'])
@@ -97,26 +100,29 @@ def get_all_users():
 
     return jsonify({'users': result})
 
+
 @app.route('/hostadd', methods=['PUT'])
-@authenticate(['AddHost'])
+@authenticate('AddHost')
 def host_add(current_user):
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
-    Host(name=data.get('name'),vars=data.get('vars', {}), groups=data.get("groups",[])).save()
+    Host(name=data.get('name'), vars=data.get(
+        'vars', {}), groups=data.get("groups", [])).save()
     return jsonify({'message': 'Host Added'})
 
+
 @app.route('/groupadd', methods=['PUT'])
-@authenticate(['AddGroup'])
+@authenticate('AddGroup')
 def group_add(current_user):
     warning = []
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
-    
-    group = Group(name=data.get('name'),vars=data.get('vars', {}))
+
+    group = Group(name=data.get('name'), vars=data.get('vars', {}))
     group.save()
-    parentgroups = data.get("parent_groups",None)
+    parentgroups = data.get("parent_groups", None)
     if parentgroups is not None:
         o_parentgroup = Group.objects(name__in=parentgroups)
         if o_parentgroup is not None:
@@ -125,9 +131,9 @@ def group_add(current_user):
                 g.child_groups.append(group)
                 g.save()
         for not_found in Group.objects(name__nin=parentgroups):
-            warning.append("Could not find parent group %s"%(not_found))
+            warning.append("Could not find parent group %s" % (not_found))
 
-    childgroups = data.get("child_groups",None)
+    childgroups = data.get("child_groups", None)
     if childgroups is not None:
         o_childgroups = Group.objects(name__in=childgroups)
         if o_childgroups is not None:
@@ -136,43 +142,60 @@ def group_add(current_user):
                 g.parent_groups.append(group)
                 g.save()
         for not_found in Group.objects(name__nin=childgroups):
-            warning.append("Could not find child group %s"%(not_found))
-    
+            warning.append("Could not find child group %s" % (not_found))
+
     group.save()
     return jsonify({'message': 'Group Added'})
+
 
 @app.route('/init', methods=['PUT'])
 @authenticate()
 def init(current_user):
     db_init()
-    return  jsonify({'message': 'Database has been reseted'})
+    return jsonify({'message': 'Database has been reseted'})
 
 
 @app.route('/flush', methods=['DELETE'])
-@authenticate(["admin"])
+@authenticate("admin")
 def flush(current_user):
     db_flush()
-    return  jsonify({'message': 'Database has been cleared'})
+    return jsonify({'message': 'Database has been cleared'})
 
-@app.route('/queryhost', methods=['GET','POST'])
-@authenticate(["ReadOnly"])
+
+@app.route('/queryhost', methods=['GET', 'POST'])
+@authenticate("ReadOnly")
 def query_host(current_user):
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
-    if isinstance(data.get("name"),str):
+    if isinstance(data.get("name"), str):
         data["name"] = [data.get("name")]
     o_hosts = Host.objects(name__in=data.get("name"))
 
-    if data.get("hide_id",True):
+    if data.get("hide_id", True):
         o_hosts = o_hosts.exclude("id")
 
     if o_hosts is not None:
         return jsonify(o_hosts)
     else:
-        return  jsonify({'var': 'Host not found'})
+        return jsonify({'var': 'Host not found'})
+
+@app.route('/setvar', methods=['PUT'])
+@authenticate("ReadOnly")
+def set_var(current_user):
+    data = request.get_json()
+    if "name" not in data:
+        return jsonify({'message': ''''"name" required argument'''})
+    o_host = Host.objects(name=data.get("name")).first()
+    if o_host is not None:
+        o_host.vars.update(data.get("vars",{}))
+        o_host.save()
+    else:
+        return jsonify({'message': 'host not found'})
+    return jsonify({'message': 'add variables to object', "host": o_host })
 
 
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
+
