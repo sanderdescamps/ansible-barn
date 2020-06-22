@@ -100,6 +100,18 @@ def host_add(current_user):
         'vars', {}), groups=data.get("groups", [])).save()
     return jsonify({'message': 'Host Added'})
 
+@app.route('/host/delete', methods=['DELETE'])
+@authenticate('DeleteHost')
+def host_delete(current_user):
+    data = request.get_json()
+    if "name" not in data:
+        return jsonify({'message': ''''"name" required argument'''})
+    
+    if isinstance(data.get("name"), str):
+        data["name"] = [data.get("name")]
+    o_node = Node.objects(name__in=data.get("name")).delete()
+
+    return jsonify({'message': 'Host deleted'})
 @app.route('/groupadd', methods=['PUT'])
 @authenticate('AddGroup')
 def group_add(current_user):
