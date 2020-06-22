@@ -3,4 +3,4 @@
 python-env.tar.xz
 python_libs/barnapi/app/__pycache__/
 *.pyc
-python-env/
+python-env/*
