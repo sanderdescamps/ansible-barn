@@ -19,7 +19,7 @@ def authenticate(*roles):
 
             if 'x-access-tokens' in request.headers:
                 token = request.headers['x-access-tokens']
-            print(token)
+
             if not token or token == "":
                 return jsonify({'message': 'a valid token is missing'})
 
@@ -41,7 +41,7 @@ def authenticate(*roles):
             else:
                 missing_roles = [
                     r for r in roles if r not in current_user.roles]
-            print(len(missing_roles))
+
             if len(missing_roles) > 0:
                 return jsonify({
                     'message': 'Not permited, missing roles (%s)' % (','.join(missing_roles))
@@ -74,10 +74,11 @@ def login_user():
         })
 
     user = User.objects(username=auth.username).first()
-
+    print(user.password_hash)
     if check_password_hash(user.password_hash, auth.password):
         token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
         ) + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+        print(token)
         return jsonify({'token': token.decode('UTF-8')})
 
     return make_response('could not verify', 401, {
@@ -88,9 +89,9 @@ def login_user():
 @app.route('/users', methods=['GET'])
 def get_all_users():
     users = User.objects()
-    return jsonify({"result":users.only("public_id", "name", "password_hash").exclude("id")})
+    return jsonify({"result":users.exclude("id")})
 
-@app.route('/hostadd', methods=['PUT'])
+@app.route('/host/add', methods=['PUT'])
 @authenticate('AddHost')
 def host_add(current_user):
     data = request.get_json()
@@ -112,6 +113,7 @@ def host_delete(current_user):
     o_node = Node.objects(name__in=data.get("name")).delete()
 
     return jsonify({'message': 'Host deleted'})
+
 @app.route('/groupadd', methods=['PUT'])
 @authenticate('AddGroup')
 def group_add(current_user):
