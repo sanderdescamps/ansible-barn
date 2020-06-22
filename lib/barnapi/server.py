@@ -91,8 +91,6 @@ def get_all_users():
     users = User.objects()
     return jsonify({"result":users.only("public_id", "name", "password_hash").exclude("id")})
 
-
-
 @app.route('/hostadd', methods=['PUT'])
 @authenticate('AddHost')
 def host_add(current_user):
@@ -102,7 +100,6 @@ def host_add(current_user):
     Host(name=data.get('name'), vars=data.get(
         'vars', {}), groups=data.get("groups", [])).save()
     return jsonify({'message': 'Host Added'})
-
 
 @app.route('/groupadd', methods=['PUT'])
 @authenticate('AddGroup')
