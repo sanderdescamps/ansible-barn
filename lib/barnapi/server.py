@@ -170,17 +170,25 @@ def query(current_user):
     data = request.get_json()
     if "name" not in data:
         return jsonify({'message': ''''"name" required argument'''})
+
+    nodes = data.get("name")   
     if isinstance(data.get("name"), str):
-        data["name"] = [data.get("name")]
-    o_node = Node.objects(name__in=data.get("name"))
+        nodes = [nodes]
+    o_nodes = Node.objects(name__in=nodes)
 
-    if data.get("hide_id", True):
-        o_node = o_node.exclude("id")
-
-    if o_node is not None:
-        return jsonify(o_node)
-    else:
-        return jsonify({'var': 'Host not found'})
+    result = {}
+    for n in nodes:
+        o_node = Node.objects(name=n).first()
+        if o_node: 
+            d_node = o_node.to_dict()
+            d_node["failed"] = False
+            result[n]=d_node
+        else:
+            result[n]={
+                "msg": "Node not found",
+                "failed": True
+            }
+    return jsonify(result)
 
 @app.route('/setvar', methods=['PUT'])
 @authenticate("ReadOnly")
