@@ -1,49 +1,50 @@
 from ansible.module_utils.parsing.convert_bool import boolean
 from ansible.plugins.action import ActionBase
+from ansible.module_utils.urls import Request
 from datetime import datetime
-from ansiblebarn.BarnBuilder import barnBuilder
+import json
+
+# from ansiblebarn.BarnBuilder import barnBuilder
+
+token_cache={}
 
 class ActionModule(ActionBase):
     def run(self, tmp=None, task_vars=None):
+        
+        if task_vars is None:
+            task_vars = dict()
+
         result = super(ActionModule, self).run(tmp, task_vars)
+        del tmp  # tmp no longer has any effect
+
         module_args = self._task.args.copy()
 
-        barn_config={}
-        if "host" in module_args and module_args["host"] is not None:
-            barn_config["barn_hostname"] = module_args["host"]
-        if "port" in module_args and module_args["port"] is not None:
-            barn_config["barn_port"] = module_args["port"]
-        if "user" in module_args and module_args["user"] is not None:
-            barn_config["barn_user"] = module_args["user"]
-        if "password" in module_args and module_args["password"] is not None:
-            barn_config["barn_password"] = module_args["password"]
-        if "barn_type" in module_args and module_args["barn_type"] is not None:
-            barn_config["barn_inventory_type"] = module_args["barn_type"]
-
-        barnBuilder.config_manager.load_extra_vars(barn_config)
-        barn = barnBuilder.get_instance()
-        inv_host=task_vars["inventory_hostname"]
+        barn_host=module_args.get("host",None)
+        barn_port=module_args.get("port",443)
+        barn_user=module_args.get("user",None)
+        barn_password=module_args.get("password",None)
 
 
-        if "data" in module_args and isinstance(module_args["data"],dict):
-            data = module_args["data"] 
-            current_vars=barn.get_vars(inv_host)
-            print(current_vars)
-            changed = False
+        if barn_host in None:
+           result['failed'] = True
+           result['msg'] = "host is required"
 
-            if "state" in module_args and module_args["state"] == "present":
-                for k,v in data.items():
-                    print("key:%s value:%s"%(k,v))
-                    if barn.host_exist(inv_host) and not (k in current_vars and (current_vars[k] == v)):
-                        print(changed)
-                        barn.set_variable(inv_host,k,v)
-                        changed = True
-            elif "state" in module_args and module_args["state"] == "absent":
-                for k in data.keys():
-                    if k in current_vars:
-                        barn.delete_variable(inv_host,k)
-                        changed=True
-            elif "state" in module_args and module_args["state"] == "show":
-                result["output"] = barn.get_vars(inv_host)
+        global token_cache
+        token=None
+        if bool(barn_user) and bool(barn_password):
+            token_cache_index=hash([barn_user, barn_host, barn_password])
+            token=token_cache.get(token_cache_index, None)
+
+        host=task_vars.get("inventory_hostname")
+
+        data={
+            "name": host
+        }
+
+        r = Request().open("POST","http://%s:%s/query"%(barn_host,barn_port),
+                               data=json.dumps(data).encode('utf-8'),
+                               headers={'Content-type': 'application/json', "x-access-tokens": token})
+
+        
         result["changed"] = changed
         return result
