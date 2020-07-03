@@ -15,12 +15,9 @@ def authenticate(*roles):
     def require_token(f):
         @wraps(f)
         def decorator(*args, **kwargs):
-
-            token = None
-            if 'x-access-tokens' in request.headers:
-                token = request.headers['x-access-tokens']
-
             current_user=None
+            
+            token = request.headers.get('x-access-tokens', None) 
             if token is not None and token != "":
                 try:
                     data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
