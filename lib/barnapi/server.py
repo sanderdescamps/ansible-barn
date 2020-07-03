@@ -96,13 +96,15 @@ def get_all_users():
 @app.route('/nodes', methods=['GET'])
 @authenticate('getNode')
 def get_nodes(current_user=None):
-    args = request.args
-
+    args = request.args.copy()
+    data = request.get_json()
+    for k,v in data.items():
+        args[k] = v
     query_args=dict()
-    if "name" in request.args: 
-        query_args["name"] = request.args.get("name")
-    if "type" in request.args:
-        t = request.args.get("type")
+    if "name" in args: 
+        query_args["name"] = args.get("name")
+    if "type" in args:
+        t = args.get("type")
         if t.lower() == "host":
             query_args["_cls"] = "Node.Host"
         elif t.lower() == "group":
