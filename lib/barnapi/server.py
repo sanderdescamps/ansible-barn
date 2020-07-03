@@ -23,18 +23,18 @@ def authenticate(*roles):
                     data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
                     current_user = User.objects(public_id=data.get("public_id")).first()
                 except jwt.exceptions.InvalidSignatureError:
-                    return make_response('Token is invalid', 401)
+                    return make_response('token is invalid', 401)
                 except jwt.exceptions.ExpiredSignatureError:
                     return make_response('token expired', 401)
             elif request.authorization and request.authorization.username and request.authorization.password:
                 auth = request.authorization
                 current_user = User.objects(username=auth.username).first()
                 if current_user is None:
-                    return make_response('Invalid user', 401, {
+                    return make_response('invalid user', 401, {
                         'WWW.Authentication': 'Basic realm: "login required"'
                     })
                 if not check_password_hash(current_user.password_hash, auth.password):
-                    return make_response('Invalid username and password', 401, {
+                    return make_response('invalid username and password', 401, {
                         'WWW.Authentication': 'Basic realm: "login required"'
                     })
             elif "guest" in roles:
