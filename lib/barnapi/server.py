@@ -17,35 +17,39 @@ def authenticate(*roles):
         def decorator(*args, **kwargs):
 
             token = None
-
             if 'x-access-tokens' in request.headers:
                 token = request.headers['x-access-tokens']
 
-            if not token or token == "":
-                return jsonify({'message': 'a valid token is missing'})
-
-            try:
-                data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
-                current_user = User.objects(
-                    public_id=data.get("public_id")).first()
-            except jwt.exceptions.InvalidSignatureError:
-                return jsonify({'message': 'token is invalid'})
-            except jwt.exceptions.ExpiredSignatureError:
-                return jsonify({'message': 'token expired'})
-
-            if current_user is None:
-                return jsonify({'message': 'No valid token'})
-
-            missing_roles = None
-            if (roles is None) or (len(roles) == 0) or ("Admin" in current_user.roles):
-                missing_roles = []
+            current_user=None
+            if token is not None and token != "":
+                try:
+                    data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
+                    current_user = User.objects(public_id=data.get("public_id")).first()
+                except jwt.exceptions.InvalidSignatureError:
+                    return make_response('Token is invalid', 401)
+                except jwt.exceptions.ExpiredSignatureError:
+                    return make_response('token expired', 401)
+            elif request.authorization and request.authorization.username and request.authorization.password:
+                auth = request.authorization
+                current_user = User.objects(username=auth.username).first()
+                if current_user is None:
+                    return make_response('Invalid user', 401, {
+                        'WWW.Authentication': 'Basic realm: "login required"'
+                    })
+                if not check_password_hash(current_user.password_hash, auth.password):
+                    return make_response('Invalid username and password', 401, {
+                        'WWW.Authentication': 'Basic realm: "login required"'
+                    })
+            elif "guest" in roles:
+                pass
             else:
-                missing_roles = [
-                    r for r in roles if r not in current_user.roles]
+                return make_response('Unauthorized request. Username and password or token required', 401, {
+                    'WWW.Authentication': 'Basic realm: "login required"'
+                })
 
-            if len(missing_roles) > 0:
+            if "guest" not in roles and not current_user.roles_check(roles):
                 return jsonify({
-                    'message': 'Not permited, missing roles (%s)' % (','.join(missing_roles))
+                    'message': 'Not permited, missing roles (%s)' % (','.join(current_user.missing_roles(roles)))
                     })
             return f(*args, current_user=current_user, **kwargs)
 
