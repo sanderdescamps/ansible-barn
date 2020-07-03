@@ -41,7 +41,28 @@ class User(db.Document):
 
     def __repr__(self):
         return '<User %r>' % (self.name)
-    
+
+    def has_role(self, role):
+        return role in self.roles
+
+    def roles_check(self,*roles):
+        if self.admin or roles is None or "admin" in self.roles:
+            return True
+        
+        for r in roles:
+            if not self.has_role(r):
+                return False
+        return True
+
+    def missing_roles(self,roles):
+        missing_roles = []
+        if self.admin or roles is None or "admin" in self.roles:
+            return []
+        for r in roles:
+            if not self.has_role(r):
+                missing_roles.append(r)
+        return missing_roles
+
 
 class Node(db.Document):
     name=StringField(required=True, unique=True)
