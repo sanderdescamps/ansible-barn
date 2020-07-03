@@ -114,7 +114,7 @@ def get_nodes(current_user=None):
 
 @app.route('/hosts', methods=['GET'])
 @authenticate()
-def alias_hosts(current_user=None):
+def get_hosts(current_user=None):
     return redirect(url_for('get_nodes', type="host", **request.args))
 
 @app.route('/groups', methods=['GET'])
