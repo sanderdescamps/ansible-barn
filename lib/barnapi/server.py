@@ -11,6 +11,7 @@ from app.debug import db_init, db_flush
 from mongoengine.errors import NotUniqueError
 
 
+
 def authenticate(*roles):
     def require_token(f):
         @wraps(f)
