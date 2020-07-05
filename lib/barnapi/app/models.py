@@ -2,7 +2,7 @@ import uuid
 from mongoengine import StringField, BooleanField, IntField, DictField, ListField, UUIDField, ReferenceField
 from werkzeug.security import generate_password_hash
 from app import db
-from app.app_utils import deprecated
+
 
 class Role(db.Document):
     name=StringField(required=True)
@@ -83,25 +83,6 @@ class Group(Node):
     parent_groups=ListField(ReferenceField('Group'))
     child_groups=ListField(ReferenceField('Group'))
 
-    @deprecated
-    def addChildGroup(self,group_name):
-        """
-            Add a group as a child group
-
-            Parameters:
-            group_name (string): name of the group
-
-            Returns:
-            bool:returns True if group is added to group
-        """
-        o_childgroup = Group.objects(name=group_name).first()
-        if o_childgroup is not None:
-            self.child_groups.append(o_childgroup).save()
-            o_childgroup.parent_groups.append(self).save()
-            return True
-        else:
-            return False
-
     def addChildGroupObject(self,o_groups):
         """
             Add list of groups as child groups
@@ -115,25 +96,6 @@ class Group(Node):
         for g in o_groups:
             g.parent_groups.append(self).save()
 
-
-    @deprecated
-    def addParentGroup(self,group_name):
-        """
-            Add a group as a parent group
-
-            Parameters:
-            group_name (string): name of the group
-
-            Returns:
-            bool:returns True if group is added to group
-        """
-        o_parentgroup = Group.objects(name=group_name).first()
-        if o_parentgroup is not None:
-            self.parent_groups.append(o_parentgroup).save()
-            o_parentgroup.child_groups.append(self).save()
-            return True
-        else:
-            return False
         
     def addparentGroupObject(self,o_groups):
         """
