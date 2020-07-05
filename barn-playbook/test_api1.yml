@@ -1,22 +1,40 @@
 ---
-- name: Teatplaybook for custom module
+- name: Test playbook for custom module
   gather_facts: False
   hosts: 
       - srvdns01.myhomecloud.be
-  tasks: 
-    - name: ansible barn 2 test
-      throttle: 1
-      barn_read:
+  tasks:
+    - name: barn write
+      barn_write:
         host: "127.0.0.1"
         user: "sdescamps"
         password: "testpassword"
         port: 5000
-        state: absent
-        data: 
-          test: data2
+        state: present
+        vars: 
+          test: sdqf
           creationdate: vandaag
       delegate_to: localhost
-      register: output
-    - name: debug
+      register: output 
+    - name: output barn write
       debug: 
         var: "output"
+    
+    - name: barn read
+      barn_read:
+        host: "127.0.0.1"
+        user: "sdescamps"
+        password: "testpassword"
+        # token: "qmsdklfjqsdmlkfjqsdmlkfjqmsdlkfjqmlskdjf"
+        port: 5000
+        state: absent
+        exclude: ip_address
+        load_to_facts: True
+      delegate_to: localhost
+      register: output
+    - name: output barn read
+      debug: 
+        var: "output"
+    - name: print facts
+      debug: 
+        var: hostvars[inventory_hostname]
