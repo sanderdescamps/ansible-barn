@@ -167,6 +167,47 @@ def post_nodes(current_user=None):
 
     return jsonify({'message': 'Host Added'})
 
+
+@app.route('/hosts', methods=['PUT'])
+@authenticate('addHost')
+def put_host(current_user=None):
+    changed = False
+    args = request.args.copy()
+    data = request.get_json()
+    for k,v in data.items():
+        args[k] = v
+    query_args=dict()
+    
+    name = args.get("name",None)
+    if name is None: 
+        return jsonify(error='name not defined'), 400
+
+    # Create Host
+    o_node = Host.objects(name=name).first()
+    if o_node is None:
+        try:
+            if "groups" in args:
+                groups = args.get("groups").split(',')
+                o_groups = Group.objects(name__in=groups)
+                query_args["groups"] = o_groups
+            o_node = Host(**query_args)
+            changed = True
+        except NotUniqueError:
+            return jsonify(error='Duplicate Node: %s already exist'%(args.get("name"))), 400
+
+    # Set variables
+    barn_vars = data.get("vars", {})
+    for k,v in barn_vars.items():
+        if o_node.vars.get(k,None) != v:
+            o_node.vars[k] = v
+            changed = True
+    
+    if changed:
+        o_node.save()
+
+    return jsonify({'host': o_node, 'changed': changed})
+
+
 @app.route('/nodes', methods=['DELETE'])
 @authenticate('deleteNode')
 def delete_nodes(current_user=None):
