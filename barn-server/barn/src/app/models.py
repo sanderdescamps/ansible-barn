@@ -1,5 +1,5 @@
 import uuid
-from mongoengine import StringField, BooleanField, IntField, DictField, ListField, UUIDField, ReferenceField
+from mongoengine import StringField, BooleanField, DictField, ListField, ReferenceField
 from werkzeug.security import generate_password_hash
 from app import db
 
@@ -68,12 +68,6 @@ class Node(db.Document):
     name=StringField(required=True, unique=True)
     vars=DictField(default={})
     meta = {'allow_inheritance': True}
-
-    def to_dict(self, hide_id=False, ref_resolve=False, use_db_field=True):
-        som = self.to_mongo(use_db_field)
-        som.pop('_id')
-        return som.to_dict()
-
 
 class Host(Node):
     groups=ListField(default=[])

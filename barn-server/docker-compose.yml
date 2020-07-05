@@ -1,10 +1,8 @@
 version: '3'
 
 services:
-    database:
+    mongodb:
         image: mongo:latest
-        build:
-            context: ./mongodb/
         container_name: mongodb
         restart: always
         environment:
@@ -14,13 +12,15 @@ services:
         ports:
             - 27017-27019:27017-27019
         volumes:
-            - ./src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-            - ./mongo-volume:/data/db
-    flask:
+            - ./mongodb/src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+            - ./mongodb/mongo-volume:/data/db
+    barn:
         image: barn:latest
         build:
             context: ./barn/
-            dockerfile: Dockerfile
+            dockerfile: ./Dockerfile
+        links:
+            - mongodb
         restart: always
         ports:
-            - 5000:5001
+            - "5000:5000"
