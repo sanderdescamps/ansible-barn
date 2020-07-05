@@ -103,9 +103,11 @@ def get_all_users():
 @authenticate('getNode')
 def get_nodes(current_user=None):
     args = request.args.copy()
-    data = request.get_json()
-    for k,v in data.items():
-        args[k] = v
+    data = request.get_json(silent=True)
+    if data:
+        for k,v in data.items():
+            args[k] = v
+
     query_args=dict()
     if "name" in args: 
         query_args["name"] = args.get("name")
