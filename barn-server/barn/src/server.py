@@ -15,10 +15,13 @@ from app.auth import authenticate
 def signup_user():
     data = request.get_json()
     hashed_password = generate_password_hash(data['password'], method='sha256')
+    try:
     new_user = User(public_id=str(uuid.uuid4()),
                     name=data['name'], username=data['username'],
                     password_hash=hashed_password, admin=False)
     new_user.save()
+    except NotUniqueError:
+        return jsonify(error='user already exists'), 400
 
     return jsonify({'message': 'registered successfully'})
 
