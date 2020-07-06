@@ -10,6 +10,13 @@ from app.models import User, Host, Group, Node
 from app.debug import db_init, db_flush
 from app.auth import authenticate
 
+def _merge_args_data(args, data=None):
+    output = args.copy()
+    if data:
+        for k, v in data.items():
+            output[k] = v
+    return output
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def signup_user():
@@ -60,20 +67,16 @@ def get_all_users():
 @app.route('/nodes', methods=['GET'])
 @authenticate('getNode')
 def get_nodes(current_user=None):
-    args = request.args.copy()
-    data = request.get_json(silent=True)
-    if data:
-        for k, v in data.items():
-            args[k] = v
+    args = _merge_args_data(request.args, request.get_json(silent=True))
 
     query_args = dict()
     if "name" in args:
         query_args["name"] = args.get("name")
     if "type" in args:
-        t = args.get("type")
-        if t.lower() == "host":
+        node_type = args.get("type")
+        if node_type.lower() == "host":
             query_args["_cls"] = "Node.Host"
-        elif t.lower() == "group":
+        elif node_type.lower() == "group":
             query_args["_cls"] = "Node.Group"
     o_nodes = Node.objects(**query_args)
     return jsonify({'results': o_nodes})
@@ -167,10 +170,7 @@ def post_nodes(current_user=None):
 @authenticate('addHost')
 def put_host(current_user=None):
     changed = False
-    args = request.args.copy()
-    data = request.get_json()
-    for k, v in data.items():
-        args[k] = v
+    args = _merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()
 
     name = args.get("name", None)
@@ -191,7 +191,7 @@ def put_host(current_user=None):
             return jsonify(error='Duplicate Node: %s already exist' % (args.get("name"))), 400
 
     # Set variables
-    barn_vars = data.get("vars", {})
+    barn_vars = args.get("vars", {})
     for k, v in barn_vars.items():
         if o_node.vars.get(k, None) != v:
             o_node.vars[k] = v
