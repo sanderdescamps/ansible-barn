@@ -1,6 +1,5 @@
 import json
 from socket import timeout
-from urllib.error import URLError
 from ansible.plugins.action import ActionBase
 from ansible.module_utils.urls import Request
 from ansible.errors import AnsibleActionFail
