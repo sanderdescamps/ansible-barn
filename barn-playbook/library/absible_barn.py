@@ -3,6 +3,12 @@
 # Copyright: (c) 2020, Sander Descamps <sander_descamps@hotmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
+from datetime import datetime
+from ansiblebarn.BarnBuilder import barnBuilder
+import argparse
+import sys
+import os
+from ansible.module_utils.basic import AnsibleModule
 ANSIBLE_METADATA = {
     'metadata_version': '1.1',
     'status': ['preview'],
@@ -66,24 +72,17 @@ message:
     returned: always
 '''
 
-from ansible.module_utils.basic import AnsibleModule
 try:
     import json
 except ImportError:
     import simplejson as json
 
 
-
-import os
-import sys
-import argparse
-from ansiblebarn.BarnBuilder import barnBuilder
-from datetime import datetime
-
 try:
     import json
 except ImportError:
     import simplejson as json
+
 
 def run_module():
     # define available arguments/parameters a user can pass to the module
@@ -94,11 +93,12 @@ def run_module():
         user=dict(type='str', require=False, default=None),
         password=dict(type='str', require=False, default=None),
         port=dict(type='int', require=False, default=9200),
-        state=dict(type='str', required=False, choices=("present","absent","show"), default='present'),
-        barn_type=dict(type='str', require=False, choices=("mongodb","elastic"), default="mongodb")
+        state=dict(type='str', required=False, choices=(
+            "present", "absent", "show"), default='present'),
+        barn_type=dict(type='str', require=False, choices=(
+            "mongodb", "elastic"), default="mongodb")
     )
 
-    
     # seed the result dict in the object
     # we primarily care about changed and state
     # change is if this module effectively modified the target
@@ -124,15 +124,12 @@ def run_module():
     # state with no modifications
     if module.check_mode:
         module.exit_json(**result)
-  
+
     # barnBuilder.load_config_file()
-    
+
     # prop = { k: module.params[k] for k in ["barn_user","barn_password","barn_hostname","barn_port", "barn_inventory_type"] if module.params[k] is not None }
     # barnBuilder.load_extra_vars(prop)
-    
-    
-    
-    
+
     # manipulate or modify the state as needed (this is going to be the
     # part where your module will do what it needs to do)
     result['original_message'] = os.path.dirname(os.path.abspath(__file__))
@@ -153,9 +150,10 @@ def run_module():
     # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
+
 def main():
     run_module()
 
+
 if __name__ == '__main__':
     main()
-

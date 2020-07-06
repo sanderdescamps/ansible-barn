@@ -6,9 +6,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import request, jsonify, make_response, redirect, url_for
 from mongoengine.errors import NotUniqueError
 from app import app
-from app.models import User, Host, Group, Node
-from app.debug import db_init, db_flush
+from app.models import User, Host, Group, Node, Role
 from app.auth import authenticate
+from app.utils import list_parser
 
 def _merge_args_data(args, data=None):
     output = args.copy()
@@ -23,10 +23,10 @@ def signup_user():
     data = request.get_json()
     hashed_password = generate_password_hash(data['password'], method='sha256')
     try:
-    new_user = User(public_id=str(uuid.uuid4()),
-                    name=data['name'], username=data['username'],
-                    password_hash=hashed_password, admin=False)
-    new_user.save()
+        new_user = User(public_id=str(uuid.uuid4()),
+                        name=data['name'], username=data['username'],
+                        password_hash=hashed_password, admin=False)
+        new_user.save()
     except NotUniqueError:
         return jsonify(error='user already exists'), 400
 
@@ -108,8 +108,8 @@ def post_hosts(current_user=None):
         o_groups = []
         if "groups" in args:
             groups = list_parser(args.get("groups"))
-                o_groups = Group.objects(name__in=groups)
-                query_args["groups"] = o_groups
+            o_groups = Group.objects(name__in=groups)
+            query_args["groups"] = o_groups
         o_host = Host(**query_args)
         o_host.save()
         for o_group in o_groups:
@@ -135,8 +135,8 @@ def post_groups(current_user=None):
     try:
         if "child_groups" in args:
             child_groups = list_parser(args.get("child_groups"))
-                o_child_groups = Group.objects(name__in=child_groups)
-                query_args["child_groups"] = o_child_groups
+            o_child_groups = Group.objects(name__in=child_groups)
+            query_args["child_groups"] = o_child_groups
         o_group = Group(**query_args)
         o_group.save()
 
@@ -162,7 +162,7 @@ def post_nodes(current_user=None):
         return post_hosts(current_user=current_user)
     elif node_type.lower() == "group":
         return post_groups(current_user=current_user)
-        else:
+    else:
         return make_response('unknown type: %s' % (node_type), 400)
 
 
@@ -257,4 +257,4 @@ def flush(current_user=None):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)

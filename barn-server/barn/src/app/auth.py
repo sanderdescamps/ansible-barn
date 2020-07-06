@@ -5,17 +5,20 @@ from flask import request, jsonify, make_response
 from app import app
 from app.models import User
 
+
 def authenticate(*roles):
     def require_token(f):
         @wraps(f)
         def decorator(*args, **kwargs):
-            current_user=None
-            
-            token = request.headers.get('x-access-tokens', None) 
+            current_user = None
+
+            token = request.headers.get('x-access-tokens', None)
             if token is not None and token != "":
                 try:
-                    data = dict(jwt.decode(token, app.config["TOKEN_ENCRYPTION_KEY"]))
-                    current_user = User.objects(public_id=data.get("public_id")).first()
+                    data = dict(jwt.decode(
+                        token, app.config["TOKEN_ENCRYPTION_KEY"]))
+                    current_user = User.objects(
+                        public_id=data.get("public_id")).first()
                 except jwt.exceptions.InvalidSignatureError:
                     # return make_response('token is invalid', 401)
                     return jsonify(error='token is invalid'), 401
@@ -44,8 +47,10 @@ def authenticate(*roles):
                     'WWW.Authentication': 'Basic realm: "login required"'
                 })
 
-            if not current_user.roles_check(roles):
-                return jsonify(error='Not permited, missing roles (%s)' % (','.join(current_user.missing_roles(roles)))), 401
+            missing_roles = current_user.missing_roles(roles)
+            if len(missing_roles) > 1:
+                return jsonify(
+                    error='Not permited, missing roles (%s)' % (','.join(missing_roles))), 401
 
             return f(*args, current_user=current_user, **kwargs)
 

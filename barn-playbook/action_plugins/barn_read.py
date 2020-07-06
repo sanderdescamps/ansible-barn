@@ -12,16 +12,17 @@ def list_parser(to_parse):
     """
     output = []
     if type(to_parse) is str:
-        output = to_parse.replace(', ',',').replace(' ',',').split(',')
+        output = to_parse.replace(', ', ',').replace(' ', ',').split(',')
     elif type(to_parse) is list:
         for i in to_parse:
             output.extend(list_parser(i))
     else:
-        output = str(to_parse).replace(', ',',').replace(' ',',').split(',')
+        output = str(to_parse).replace(', ', ',').replace(' ', ',').split(',')
     return list(set(output))
 
+
 class ActionModule(ActionBase):
-   
+
     def run(self, tmp=None, task_vars=None):
 
         changed = False
@@ -39,9 +40,9 @@ class ActionModule(ActionBase):
         barn_user = module_args.get("user", None)
         barn_password = module_args.get("password", None)
         token = module_args.get("token", None)
-        load_to_facts = module_args.get("load_to_facts",False)
-        include = list_parser(module_args.get("include",[]))
-        exclude = list_parser(module_args.get("exclude",[]))
+        load_to_facts = module_args.get("load_to_facts", False)
+        include = list_parser(module_args.get("include", []))
+        exclude = list_parser(module_args.get("exclude", []))
 
         if barn_host is None:
             result['changed'] = False
@@ -50,7 +51,7 @@ class ActionModule(ActionBase):
             return result
 
         try:
-            data={
+            data = {
                 "name": task_vars.get("inventory_hostname"),
                 'type': "host"
             }
@@ -64,17 +65,20 @@ class ActionModule(ActionBase):
             if barn_user:
                 query_args["url_username"] = barn_user
                 query_args["force_basic_auth"] = True
-            if barn_password: 
+            if barn_password:
                 query_args["url_password"] = barn_password
                 query_args["force_basic_auth"] = True
-  
-            r = Request().open("GET", "http://%s:%s/nodes"% (barn_host, barn_port), **query_args)
-            barn_vars = json.loads(r.read()).get("results",{})[0].get("vars",{})
+
+            r = Request().open("GET", "http://%s:%s/nodes" %
+                               (barn_host, barn_port), **query_args)
+            barn_vars = json.loads(r.read()).get(
+                "results", {})[0].get("vars", {})
 
             if len(include) > 0:
-                barn_vars = { i: barn_vars[i] for i in include }
+                barn_vars = {i: barn_vars[i] for i in include}
             if len(exclude) > 0:
-                barn_vars = { i: barn_vars[i] for i in barn_vars if i not in exclude}
+                barn_vars = {i: barn_vars[i]
+                             for i in barn_vars if i not in exclude}
 
             result["vars"] = barn_vars
             if load_to_facts:
@@ -85,7 +89,7 @@ class ActionModule(ActionBase):
                 body = json.loads(e.read())
             except AttributeError:
                 body = {}
-            result["error"] = body.get("error","")
+            result["error"] = body.get("error", "")
             result['failed'] = True
         except timeout:
             result["status"] = 500

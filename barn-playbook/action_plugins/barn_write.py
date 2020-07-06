@@ -52,12 +52,12 @@ class ActionModule(ActionBase):
                     query_args["url_password"] = barn_password
                     query_args["force_basic_auth"] = True
 
-                resp = Request().open("PUT", "http://%s:%s/hosts"% (barn_host, barn_port), **query_args)
+                resp = Request().open("PUT", "http://%s:%s/hosts" %
+                                      (barn_host, barn_port), **query_args)
                 resp_json = json.loads(resp.read())
-                
-                result["changed"] = resp_json.get('changed')
-                result["vars"] = resp_json.get("host",{}).get("vars", {})
 
+                result["changed"] = resp_json.get('changed')
+                result["vars"] = resp_json.get("host", {}).get("vars", {})
 
             except urllib_error.HTTPError as e:
                 result["status"] = int(getattr(e, 'code', -1))
@@ -74,6 +74,7 @@ class ActionModule(ActionBase):
                 raise AnsibleActionFail(e)
 
         elif state == "absent":
-            resp_json["msg"] = "remove %s from barn"%(task_vars.get("inventory_hostname"))
+            resp_json["msg"] = "remove %s from barn" % (
+                task_vars.get("inventory_hostname"))
 
         return result
