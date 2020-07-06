@@ -37,7 +37,7 @@ def _load_config(path, section):
 
 app = Flask(__name__)
 
-cfg_path = os.path.join(os.getcwd(), "config/barn.cfg")
+cfg_path = os.path.join(os.getcwd(), "config/barn-server.cfg")
 mongo_config = MONGO_DEFAULT_CONFIG.copy()
 mongo_config.update(_load_config(cfg_path, "mongodb"))
 app.config['MONGO_CONFIG'] = mongo_config
