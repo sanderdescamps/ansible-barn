@@ -223,13 +223,36 @@ def delete_nodes(current_user=None):
 @app.route('/init', methods=['PUT'])
 @authenticate()
 def init(current_user=None):
-    db_init()
+    Role.objects().delete()
+    r_admin = Role(name="Admin", description="Allow anything")
+    r_admin.save()
+    Role(name="AddHost", description="Add a host to the inventory").save()
+    Role(name="AddGroup", description="Add a group to the inventory").save()
+    Role(name="ReadOnly", description="Read access on inventory").save()
+    Role(name="Query", description="Read access on inventory").save()
+
+    User.objects().delete()
+    user_1 = User(name="Sander Descamps", username="sdescamps",
+            password="testpassword")
+    user_1.roles.append(r_admin)
+    user_1.save()
+
+    Host.objects().delete()
+    Host(name="srvplex01.myhomecloud.be").save()
+    Host(name="srvdns01.myhomecloud.be").save()
+    Host(name="srvdns02.myhomecloud.be").save()
+
+    Group.objects().delete()
+    Group(name="dns_servers").save()
+    Group(name="all_servers").save()
     return jsonify({'message': 'Database has been reseted'})
+
 
 @app.route('/flush', methods=['DELETE'])
 @authenticate("admin")
 def flush(current_user=None):
-    db_flush()
+    Host.objects().delete()
+    Group.objects().delete()
     return jsonify({'message': 'Database has been flushed'})
 
 
