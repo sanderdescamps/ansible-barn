@@ -16,6 +16,7 @@ services:
             - ./mongodb/mongo-volume:/data/db
     barn:
         image: barn:latest
+        container_name: barn
         build:
             context: ./barn/
             dockerfile: ./Dockerfile
