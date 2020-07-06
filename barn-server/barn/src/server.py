@@ -197,6 +197,13 @@ def put_host(current_user=None):
             o_node.vars[k] = v
             changed = True
 
+    # Delete variables
+    vars_to_remove = args.get("remove_vars", [])
+    for var_to_remove in vars_to_remove:
+        if var_to_remove in o_node.vars:
+            del o_node.vars[var_to_remove]
+            changed = True
+
     if changed:
         o_node.save()
 

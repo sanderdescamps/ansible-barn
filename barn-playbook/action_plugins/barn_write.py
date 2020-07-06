@@ -25,6 +25,7 @@ class ActionModule(ActionBase):
         token = module_args.get("token", None)
         state = module_args.get("state", None)
         barn_vars = module_args.get("vars", {})
+        vars_to_remove = module_args.get("remove_vars",[])
 
         if barn_host is None:
             result['changed'] = False
@@ -37,7 +38,8 @@ class ActionModule(ActionBase):
                 data = {
                     "name": task_vars.get("inventory_hostname"),
                     'type': "host",
-                    "vars": barn_vars
+                    "vars": barn_vars,
+                    "remove_vars": vars_to_remove
                 }
 
                 query_args = dict()
