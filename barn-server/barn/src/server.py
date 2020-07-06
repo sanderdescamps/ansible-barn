@@ -33,10 +33,13 @@ def login_user():
         })
 
     user = User.objects(username=auth.username).first()
-    print(user.password_hash)
+    if user is None:
+        return make_response('Could not login', 401, {
+            'WWW.Authentication': 'Basic realm: "login required"'
+        })
     if check_password_hash(user.password_hash, auth.password):
         token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
-        ) + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])
+        ) + datetime.timedelta(minutes=30)}, app.config['TOKEN_ENCRYPTION_KEY'])
         print("token: %s" % token.decode('UTF-8'))
         return jsonify({'token': token.decode('UTF-8')})
 

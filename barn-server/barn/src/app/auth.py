@@ -14,7 +14,7 @@ def authenticate(*roles):
             token = request.headers.get('x-access-tokens', None) 
             if token is not None and token != "":
                 try:
-                    data = dict(jwt.decode(token, app.config["SECRET_KEY"]))
+                    data = dict(jwt.decode(token, app.config["TOKEN_ENCRYPTION_KEY"]))
                     current_user = User.objects(public_id=data.get("public_id")).first()
                 except jwt.exceptions.InvalidSignatureError:
                     # return make_response('token is invalid', 401)
