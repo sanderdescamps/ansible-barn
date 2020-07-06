@@ -92,41 +92,75 @@ def get_groups(current_user=None):
 
 
 @app.route('/nodes', methods=['POST'])
-@authenticate('addNode')
-def post_nodes(current_user=None):
+@authenticate('addHost')
+def post_hosts(current_user=None):
+    args = _merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()
-    if "name" in request.args:
-        query_args["name"] = request.args.get("name")
+    if "name" in args:
+        query_args["name"] = args.get("name")
     else:
         return make_response('name not defined', 400)
 
-    if "type" not in request.args:
-        return make_response('type not defined', 400)
-
     try:
-        t = request.args.get("type")
-        if t.lower() == "host":
-            if "groups" in request.args:
-                groups = request.args.get("groups").split(',')
+        o_groups = []
+        if "groups" in args:
+            groups = list_parser(args.get("groups"))
                 o_groups = Group.objects(name__in=groups)
                 query_args["groups"] = o_groups
-            Host(**query_args).save()
-        elif t.lower() == "group":
-            if "parent_groups" in request.args:
-                parent_groups = request.args.get("parent_groups").split(',')
-                o_parent_groups = Group.objects(name__in=parent_groups)
-                query_args["parent_groups"] = o_parent_groups
-            if "child_groups" in request.args:
-                child_groups = request.args.get("child_groups").split(',')
-                o_child_groups = Group.objects(name__in=child_groups)
-                query_args["child_groups"] = o_child_groups
-            Group(**query_args).save()
-        else:
-            return make_response('unknown type: %s' % (t), 400)
-    except NotUniqueError as e:
-        return make_response('Duplicate Node: %s already exist' % (request.args.get("name")), 400)
+        o_host = Host(**query_args)
+        o_host.save()
+        for o_group in o_groups:
+            o_group.update(add_to_set__hosts=o_host)
+
+    except NotUniqueError:
+        return make_response('Duplicate Host: %s already exist' % (args.get("name")), 400)
 
     return jsonify({'message': 'Host Added'})
+
+
+@app.route('/groups', methods=['POST'])
+@authenticate('getGroup')
+def post_groups(current_user=None):
+    args = _merge_args_data(request.args, request.get_json(silent=True))
+
+    query_args = dict()
+    if "name" in args:
+        query_args["name"] = args.get("name")
+    else:
+        return make_response('name not defined', 400)
+
+    try:
+        if "child_groups" in args:
+            child_groups = list_parser(args.get("child_groups"))
+                o_child_groups = Group.objects(name__in=child_groups)
+                query_args["child_groups"] = o_child_groups
+        o_group = Group(**query_args)
+        o_group.save()
+
+        if "parent_groups" in args:
+            parent_groups = list_parser(args.get("parent_groups"))
+            o_parent_groups = Group.objects(name__in=parent_groups)
+            for o_parent_group in o_parent_groups:
+                o_parent_group.update(add_to_set__child_groups=o_group)
+    except NotUniqueError:
+        return make_response('Duplicate Group: %s already exist' % (args.get("name")), 400)
+
+    return jsonify({'message': 'Group Added'})
+
+
+@app.route('/nodes', methods=['POST'])
+@authenticate('addNode')
+def post_nodes(current_user=None):
+    args = _merge_args_data(request.args, request.get_json(silent=True))
+    node_type = args.get("type", None)
+    if not node_type:
+        return make_response('type not defined', 400)
+    elif node_type.lower() == "host":
+        return post_hosts(current_user=current_user)
+    elif node_type.lower() == "group":
+        return post_groups(current_user=current_user)
+        else:
+        return make_response('unknown type: %s' % (node_type), 400)
 
 
 @app.route('/hosts', methods=['PUT'])
