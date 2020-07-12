@@ -70,19 +70,18 @@ class Node(db.Document):
 
 
 class Host(Node):
-    groups = ListField(default=[])
-
     def get_hosts(self):
         return [self]
 
 
 class Group(Node):
-    hosts = ListField(default=[])
+    # hosts = ListField(default=[])
+    hosts = ListField(ReferenceField('Host'))
     # parent_groups=ListField(ReferenceField('Group'))
     child_groups = ListField(ReferenceField('Group'))
 
     def get_hosts(self):
-        result = []
+        result = self.hosts
         for child_group in self.child_groups:
             result.extend(child_group.get_hosts())
         return result
