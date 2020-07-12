@@ -1,9 +1,12 @@
 def list_parser(to_parse):
     """
-        split a string or list of strings into seperate strings. Seperated by comma or spaces.
+        Split a string or list of strings into seperate strings. Seperated by comma or spaces.
+        (if to_parse is None, methode will return None)
     """
     output = []
-    if isinstance(to_parse, str):
+    if to_parse is None:
+        return None
+    elif isinstance(to_parse, str):
         output = to_parse.replace(', ', ',').replace(' ', ',').split(',')
     elif isinstance(to_parse, list):
         for i in to_parse:
