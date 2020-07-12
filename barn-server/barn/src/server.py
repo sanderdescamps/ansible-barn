@@ -245,13 +245,22 @@ def init(current_user=None):
     user_1.save()
 
     Host.objects().delete()
-    Host(name="srvplex01.myhomecloud.be").save()
-    Host(name="srvdns01.myhomecloud.be").save()
-    Host(name="srvdns02.myhomecloud.be").save()
+    h_srvplex01 = Host(name="srvplex01.myhomecloud.be")
+    h_srvplex01.save()
+    h_srvdns01 = Host(name="srvdns01.myhomecloud.be")
+    h_srvdns01.save()
+    h_srvdns02 = Host(name="srvdns02.myhomecloud.be").save()
+    h_srvdns02.save()
 
     Group.objects().delete()
-    Group(name="dns_servers").save()
-    Group(name="all_servers").save()
+    g_dns_servers = Group(name="dns_servers")
+    g_dns_servers.hosts.append(h_srvdns01)
+    g_dns_servers.hosts.append(h_srvdns02)
+    g_dns_servers.save()
+    g_all_servers = Group(name="all_servers")
+    g_all_servers.child_groups.append(g_dns_servers)
+    g_all_servers.hosts.append(h_srvplex01)
+    g_all_servers.save()
     return jsonify({'message': 'Database has been reseted'})
 
 
