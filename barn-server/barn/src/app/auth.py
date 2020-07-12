@@ -42,11 +42,11 @@ def authenticate(*roles):
                     })
             elif "guest" in roles:
                 return f(*args, current_user=None, **kwargs)
-            else:
+
+            if current_user is None:
                 return make_response(jsonify(error='Unauthorized request. Username/password or token required'), 401, {
                     'WWW.Authentication': 'Basic realm: "login required"'
                 })
-
             missing_roles = current_user.missing_roles(roles)
             if len(missing_roles) > 1:
                 return jsonify(
