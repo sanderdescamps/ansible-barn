@@ -10,6 +10,7 @@ from app.models import User, Host, Group, Node, Role
 from app.auth import authenticate
 from app.utils import list_parser
 
+
 def _merge_args_data(args, data=None):
     output = args.copy()
     if data:
@@ -91,6 +92,22 @@ def get_hosts(current_user=None):
 @app.route('/groups', methods=['GET'])
 @authenticate('getGroup')
 def get_groups(current_user=None):
+    args = _merge_args_data(request.args, request.get_json(silent=True))
+
+    query_args = dict()
+    query_args["name"] = args.get("name", None)
+    if not query_args["name"]:
+        return jsonify(error='name not defined'), 400
+    
+    o_groups = Group.objects(**query_args)
+    return jsonify({
+        'results': o_groups,
+        'failed': False,
+        'msg': "return list of group(s)"
+    })
+
+    
+    
     return redirect(url_for('get_nodes', type="group", **request.args))
 
 
@@ -226,6 +243,28 @@ def delete_nodes(current_user=None):
     o_nodes.delete()
     return jsonify({'message': '%s have been deleted' % (s_nodes)})
 
+@app.route('/ansible_inventory', methods=['GET'])
+@authenticate('guest')
+def get_ansible_inventory(current_user=None):
+    args = _merge_args_data(request.args, request.get_json(silent=True))
+    name = list_parser(args.get("name",None))
+    query_args = dict()
+    if name is not None:
+        query_args["name__in"] = name
+    else:
+        return make_response('name not defined', 400)
+
+    o_nodes = Node.objects(**query_args)
+
+    o_hosts = []
+    for o_node in o_nodes:
+        o_hosts.extend(o_node.get_hosts())
+    o_hosts = list(set(o_hosts))
+    s_hosts = []
+    for o_host in o_hosts:
+        s_hosts.append(o_host.name)
+
+    return jsonify({'results': s_hosts, "o_hosts":o_hosts})
 
 @app.route('/init', methods=['PUT'])
 @authenticate()
@@ -240,7 +279,7 @@ def init(current_user=None):
 
     User.objects().delete()
     user_1 = User(name="Sander Descamps", username="sdescamps",
-            password="testpassword")
+                  password="testpassword")
     user_1.roles.append(r_admin)
     user_1.save()
 
