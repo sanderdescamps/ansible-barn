@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify, make_response
-from app.models import Group
 from mongoengine.errors import NotUniqueError
 from app.utils import list_parser, merge_args_data
 from app.auth import authenticate
+from app.models import Group
 
 group_pages = Blueprint('group', __name__)
+
 
 @group_pages.route('/groups', methods=['GET'])
 @authenticate('getGroup')
@@ -22,6 +23,7 @@ def get_groups(current_user=None):
         'failed': False,
         'msg': "return list of group(s)"
     })
+
 
 @group_pages.route('/groups', methods=['PUT'])
 @authenticate('getGroup')
@@ -51,6 +53,7 @@ def put_groups(current_user=None):
         return make_response('Duplicate Group: %s already exist' % (args.get("name")), 400)
 
     return jsonify({'message': 'Group Added'})
+
 
 @group_pages.route('/groups', methods=['DELETE'])
 @authenticate('deleteGroups')

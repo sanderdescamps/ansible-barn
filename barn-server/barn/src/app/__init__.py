@@ -34,6 +34,6 @@ app.register_blueprint(group_pages)
 app.register_blueprint(node_pages)
 app.register_blueprint(inventory_pages)
 if config.get_barn_config().get("debug_mode", False):
-app.register_blueprint(debug_pages)
+    app.register_blueprint(debug_pages)
 
 db = MongoEngine(app)

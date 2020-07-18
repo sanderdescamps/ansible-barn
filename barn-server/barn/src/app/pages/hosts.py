@@ -5,8 +5,8 @@ from app.utils import merge_args_data
 from app.auth import authenticate
 
 
-
 host_pages = Blueprint('host', __name__)
+
 
 @host_pages.route('/hosts', methods=['GET'])
 @authenticate('getHost')
@@ -68,6 +68,7 @@ def put_hosts(current_user=None):
         o_node.save()
 
     return jsonify({'host': o_node, 'changed': changed})
+
 
 @host_pages.route('/hosts', methods=['DELETE'])
 @authenticate('deleteHost')

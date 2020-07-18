@@ -10,6 +10,7 @@ from flask import current_app
 
 user_pages = Blueprint('user', __name__)
 
+
 @user_pages.route('/register', methods=['GET', 'POST'])
 def signup_user():
     data = request.get_json()
@@ -48,6 +49,7 @@ def login_user():
     return make_response('could not verify', 401, {
         'WWW.Authentication': 'Basic realm: "login required"'
     })
+
 
 @user_pages.route('/users', methods=['GET'])
 def get_all_users():

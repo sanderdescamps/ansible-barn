@@ -5,6 +5,7 @@ from app.auth import authenticate
 
 inventory_pages = Blueprint('inventory', __name__)
 
+
 @inventory_pages.route('/inventory', methods=['GET'])
 @authenticate()
 def get_ansible_inventory(current_user=None):

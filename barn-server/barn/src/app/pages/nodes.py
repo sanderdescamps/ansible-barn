@@ -7,6 +7,7 @@ from app.pages.groups import put_groups
 
 node_pages = Blueprint('nodes', __name__)
 
+
 @node_pages.route('/nodes', methods=['GET'])
 @authenticate('getNode')
 def get_nodes(current_user=None):
@@ -24,6 +25,7 @@ def get_nodes(current_user=None):
     o_nodes = Node.objects(**query_args)
     return jsonify({'results': o_nodes})
 
+
 @node_pages.route('/nodes', methods=['PUT'])
 @authenticate('addNode')
 def post_nodes(current_user=None):
@@ -37,6 +39,7 @@ def post_nodes(current_user=None):
         return put_groups(current_user=current_user)
     else:
         return jsonify(error='unknown type: %s' % (node_type)), 400
+
 
 @node_pages.route('/nodes', methods=['DELETE'])
 @authenticate('deleteNode')

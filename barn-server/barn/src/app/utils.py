@@ -15,7 +15,11 @@ def list_parser(to_parse):
         output = list_parser(str(to_parse))
     return list(set(output))
 
+
 def merge_args_data(args, data=None):
+    """
+        Merge arg and data into one directory
+    """
     output = args.copy()
     if data:
         for k, v in data.items():

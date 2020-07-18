@@ -1,8 +1,8 @@
 import uuid
 from abc import abstractmethod
-from mongoengine import StringField, BooleanField, DictField, ListField, ReferenceField
+from mongoengine import Document, StringField, BooleanField, DictField, ListField, ReferenceField
 from werkzeug.security import generate_password_hash
-from mongoengine import Document
+
 
 class Role(Document):
     name = StringField(required=True)

@@ -17,8 +17,10 @@ BARN_DEFAULT_CONFIG = {
     "barn_token_encryption_key": "change_me"
 }
 
+
 class ConfigLoader():
     """Config loader class for barn-server.cfg"""
+
     def __init__(self, config_path):
         self.config_path = config_path
         self.barn_config = None
@@ -43,7 +45,7 @@ class ConfigLoader():
                 elif v.replace('.', '', 1).isdigit() or v.replace(',', '', 1).isdigit():
                     result[k] = float(v.replace(',', '.', 1))
                 else:
-                result[k] = v
+                    result[k] = v
         return result
 
     def get_mongo_config(self):
@@ -51,7 +53,7 @@ class ConfigLoader():
             self.mongo_config = MONGO_DEFAULT_CONFIG.copy()
             self.mongo_config.update(self._load_config("mongodb"))
         return self.mongo_config
-    
+
     def get_mongo_settings(self):
         mongo_config = self.get_mongo_config()
         return dict(

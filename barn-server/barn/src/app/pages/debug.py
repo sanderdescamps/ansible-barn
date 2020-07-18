@@ -4,6 +4,7 @@ from app.auth import authenticate
 
 debug_pages = Blueprint('debug', __name__)
 
+
 @debug_pages.route('/init', methods=['PUT'])
 @authenticate("guest")
 def init(current_user=None):

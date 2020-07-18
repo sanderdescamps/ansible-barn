@@ -1,9 +1,9 @@
 from functools import wraps
 import jwt
 from werkzeug.security import check_password_hash
-from flask import request, jsonify, make_response
+from flask import request, jsonify, make_response, current_app
 from app.models import User
-from flask import current_app
+
 
 def authenticate(*roles):
     def require_token(f):
