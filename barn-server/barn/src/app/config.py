@@ -68,5 +68,4 @@ class ConfigLoader():
         if self.barn_config is None:
             self.barn_config = BARN_DEFAULT_CONFIG.copy()
             self.barn_config.update(self._load_config("barn"))
-        print(self.barn_config)
         return self.barn_config
