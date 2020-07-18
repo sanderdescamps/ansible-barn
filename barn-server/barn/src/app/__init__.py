@@ -1,59 +1,38 @@
+import sys
 import os
-from flask import Flask, request, jsonify, make_response
+from flask import Flask
 from flask_mongoengine import MongoEngine
-import jwt
-import configparser
-
-MONGO_DEFAULT_CONFIG = {
-    "mongo_user": "admin",
-    "mongo_password": "change_me",
-    "mongo_host": "127.0.0.1",
-    "mongo_port": "27017",
-    "mongo_db": "inventory"
-}
-
-BARN_DEFAULT_CONFIG = {
-    "barn_init_admin_user": "admin",
-    "barn_init_admin_password": "admin",
-    "https_cert": None,
-    "https_cert_key": None,
-    "barn_token_encryption_key": "change_me"
-}
-
-
-def _load_config(path, section):
-    """
-        Load ini config file to dir
-        When file doesn't exist, return empty directory
-    """
-    result = {}
-    if os.path.isfile(path):
-        config = configparser.ConfigParser()
-        config.read(path)
-        for k, v in config.items(section):
-            result[k] = v
-    return result
-
+from app.config import ConfigLoader
+from app.pages.users import user_pages
+from app.pages.hosts import host_pages
+from app.pages.groups import group_pages
+from app.pages.nodes import node_pages
+from app.pages.inventory import inventory_pages
+from app.pages.debug import debug_pages
 
 app = Flask(__name__)
+cfg_path = None
+if len(sys.argv) > 1:
+    cfg_path = sys.argv[1]
+elif os.path.exists(os.path.join(os.getcwd(), "config/barn-server.cfg")):
+    cfg_path = os.path.join(os.getcwd(), "config/barn-server.cfg")
+elif os.path.exists("/etc/barn/barn-server.cfg"):
+    cfg_path = "/etc/barn/barn-server.cfg"
+else:
+    print("Can't load config file")
+    sys.exit("Couldn't find config file")
 
-cfg_path = os.path.join(os.getcwd(), "config/barn-server.cfg")
-mongo_config = MONGO_DEFAULT_CONFIG.copy()
-mongo_config.update(_load_config(cfg_path, "mongodb"))
-app.config['MONGO_CONFIG'] = mongo_config
-
-barn_config = BARN_DEFAULT_CONFIG.copy()
-barn_config.update(_load_config(cfg_path, "barn"))
-app.config['BARN_CONFIG'] = barn_config
-
-app.config['TOKEN_ENCRYPTION_KEY'] = barn_config.get(
+config = ConfigLoader(cfg_path)
+app.config['BARN_CONFIG'] = config
+app.config['TOKEN_ENCRYPTION_KEY'] = config.get_barn_config().get(
     "barn_token_encryption_key")
-app.config['MONGODB_SETTINGS'] = dict(
-    db=mongo_config.get("mongo_db"),
-    host=mongo_config.get("mongo_host"),
-    username=mongo_config.get("mongo_user"),
-    password=mongo_config.get("mongo_password"),
-    authentication_source="admin"
-)
+app.config['MONGODB_SETTINGS'] = config.get_mongo_settings()
+
+app.register_blueprint(host_pages)
+app.register_blueprint(user_pages)
+app.register_blueprint(group_pages)
+app.register_blueprint(node_pages)
+app.register_blueprint(inventory_pages)
+app.register_blueprint(debug_pages)
 
 db = MongoEngine(app)

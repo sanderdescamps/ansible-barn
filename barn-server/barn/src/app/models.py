@@ -2,10 +2,9 @@ import uuid
 from abc import abstractmethod
 from mongoengine import StringField, BooleanField, DictField, ListField, ReferenceField
 from werkzeug.security import generate_password_hash
-from app import db
+from mongoengine import Document
 
-
-class Role(db.Document):
+class Role(Document):
     name = StringField(required=True)
     description = StringField()
 
@@ -28,7 +27,7 @@ class Role(db.Document):
             )
 
 
-class User(db.Document):
+class User(Document):
     public_id = StringField(default=str(uuid.uuid4()))
     name = StringField()
     username = StringField(required=True, unique=True)
@@ -59,7 +58,7 @@ class User(db.Document):
         return missing_roles
 
 
-class Node(db.Document):
+class Node(Document):
     name = StringField(required=True, unique=True)
     vars = DictField(default={})
     meta = {'allow_inheritance': True}
