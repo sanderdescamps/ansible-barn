@@ -9,6 +9,7 @@ from app.pages.groups import group_pages
 from app.pages.nodes import node_pages
 from app.pages.inventory import inventory_pages
 from app.pages.debug import debug_pages
+from app.models import User
 
 app = Flask(__name__)
 cfg_path = None
@@ -37,3 +38,11 @@ if config.get_barn_config().get("debug_mode", False):
     app.register_blueprint(debug_pages)
 
 db = MongoEngine(app)
+
+if not User.objects(name=config.get_barn_config().get("barn_init_admin_user","admin")).first():
+    User(
+        name=config.get_barn_config().get("barn_init_admin_user","admin"),
+        username=config.get_barn_config().get("barn_init_admin_user","admin"),
+        password=config.get_barn_config().get("barn_init_admin_password","admin"),
+        admin=True
+        ).save()
