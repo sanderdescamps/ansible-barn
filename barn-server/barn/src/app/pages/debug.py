@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from app.models import Group, Role, Host, User
 from app.auth import authenticate
+from app.config import ConfigLoader
 
 debug_pages = Blueprint('debug', __name__)
 
@@ -8,18 +9,16 @@ debug_pages = Blueprint('debug', __name__)
 @debug_pages.route('/init', methods=['PUT'])
 @authenticate("guest")
 def init(current_user=None):
-    Role.objects().delete()
-    r_admin = Role(name="Admin", description="Allow anything")
-    r_admin.save()
-    Role(name="AddHost", description="Add a host to the inventory").save()
-    Role(name="AddGroup", description="Add a group to the inventory").save()
-    Role(name="ReadOnly", description="Read access on inventory").save()
-    Role(name="Query", description="Read access on inventory").save()
+    Role.objects(name__not__iexact="admin").delete()
+    Role(name="admin", description="Allow anything")
+    Role(name="addHost", description="Add a host to the inventory").save()
+    Role(name="addGroup", description="Add a group to the inventory").save()
+    Role(name="readOnly", description="Read access on inventory").save()
+    Role(name="query", description="Read access on inventory").save()
 
-    User.objects().delete()
+    User.objects(name__not__iexact=current_app.config.get('BARN_CONFIG').get_barn_config().get("barn_init_admin_user")).delete()
     user_1 = User(name="Sander Descamps", username="sdescamps",
-                  password="testpassword")
-    user_1.roles.append(r_admin)
+                  password="testpassword", roles=["admin"])
     user_1.save()
 
     Host.objects().delete()
