@@ -14,3 +14,10 @@ def list_parser(to_parse):
     else:
         output = list_parser(str(to_parse))
     return list(set(output))
+
+def merge_args_data(args, data=None):
+    output = args.copy()
+    if data:
+        for k, v in data.items():
+            output[k] = v
+    return output
