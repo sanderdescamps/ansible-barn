@@ -34,6 +34,15 @@ class ConfigLoader():
             config = configparser.ConfigParser()
             config.read(self.config_path)
             for k, v in config.items(section):
+                if v in ["yes", "true", "on"]:
+                    result[k] = True
+                elif v in ["no", "false", "off"]:
+                    result[k] = False
+                elif v.isdigit():
+                    result[k] = int(v)
+                elif v.replace('.', '', 1).isdigit() or v.replace(',', '', 1).isdigit():
+                    result[k] = float(v.replace(',', '.', 1))
+                else:
                 result[k] = v
         return result
 
