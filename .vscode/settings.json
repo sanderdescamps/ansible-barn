@@ -1,0 +1,8 @@
+{
+  "python.pythonPath": "python-env/bin/python",
+  "python.linting.pylintArgs": [
+    "--generated-members=objects",
+    "--good-names=e,k,v,i",
+    "--max-line-length=120"
+  ]
+}

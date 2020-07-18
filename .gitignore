@@ -1,4 +1,3 @@
-.vscode/
 *__pycache__*python-env/
 python-env.tar.xz
 python_libs/barnapi/app/__pycache__/
