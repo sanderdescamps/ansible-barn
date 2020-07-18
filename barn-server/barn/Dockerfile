@@ -6,5 +6,6 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./src/ .
+COPY ./config/barn-server.cfg .
 
-CMD [ "python","-u","./server.py" ]
+CMD [ "python","-u","./server.py", "./barn-server.cfg" ]

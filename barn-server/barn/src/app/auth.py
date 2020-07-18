@@ -2,9 +2,8 @@ from functools import wraps
 import jwt
 from werkzeug.security import check_password_hash
 from flask import request, jsonify, make_response
-from app import app
 from app.models import User
-
+from flask import current_app
 
 def authenticate(*roles):
     def require_token(f):
@@ -16,7 +15,7 @@ def authenticate(*roles):
             if token is not None and token != "":
                 try:
                     data = dict(jwt.decode(
-                        token, app.config["TOKEN_ENCRYPTION_KEY"]))
+                        token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
                     current_user = User.objects(
                         public_id=data.get("public_id")).first()
                 except jwt.exceptions.InvalidSignatureError:
