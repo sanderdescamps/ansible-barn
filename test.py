@@ -1,11 +1,12 @@
-from ansible.inventory.group import Group
-from ansible.inventory.host import Host
+#/usr/bin/python3
+import re
 
-h1 = Host("srvdns01.myhomecloud.be")
-h2 = Host("srvdns02.myhomecloud.be")
-
-g1 = Group(name="testgroup")
-g1.add_host(h1)
-g1.add_host(h2)
-
-print(g1.serialize())
+connection_string = "barn://user:password@127.0.0.1:5000"
+m = re.search(r'barn://([^:]+):([^@]+)@([^:]+):(\d+)', connection_string)
+print(m)
+output = dict(
+                user=m.group(1),
+                password=m.group(2),
+                host=m.group(3),
+                port=m.group(4))
+print(output)
