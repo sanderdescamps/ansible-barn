@@ -25,7 +25,6 @@ def get_hosts(current_user=None):
     o_nodes = Node.objects(**query_args)
     return jsonify({'results': o_nodes})
 
-
 @host_pages.route('/hosts', methods=['PUT'])
 @authenticate('addHost')
 def put_hosts(current_user=None):
