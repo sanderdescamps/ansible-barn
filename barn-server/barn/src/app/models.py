@@ -87,11 +87,21 @@ class Node(Document):
     def get_hosts(self):
         return
 
+    @abstractmethod
+    def to_barn_dict(self):
+        pass
+
 
 class Host(Node):
     def get_hosts(self):
         return [self]
 
+    def to_barn_dict(self):
+        return dict(
+            name=self.name,
+            cls="host",
+            vars=self.vars
+        )
 
 class Group(Node):
     # hosts = ListField(default=[])
@@ -104,3 +114,12 @@ class Group(Node):
         for child_group in self.child_groups:
             result.extend(child_group.get_hosts())
         return result
+
+    def to_barn_dict(self):
+        return dict(
+            name=self.name,
+            cls="group",
+            vars=self.vars,
+            hosts=[host.name for host in self.hosts],
+            child_groups=[group.name for group in self.child_groups]
+        )
