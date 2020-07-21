@@ -1,8 +1,11 @@
-from flask import Blueprint, request, jsonify, make_response
+from flask import Blueprint, request
 from mongoengine.errors import NotUniqueError
+from http import HTTPStatus
 from app.utils import list_parser, merge_args_data
 from app.auth import authenticate
-from app.models import Group
+from app.models import Group, Host
+from app.utils.formater import ResponseFormater
+
 
 group_pages = Blueprint('group', __name__)
 
@@ -10,63 +13,80 @@ group_pages = Blueprint('group', __name__)
 @group_pages.route('/groups', methods=['GET'])
 @authenticate('getGroup')
 def get_groups(current_user=None):
-    args = merge_args_data(request.args, request.get_json(silent=True))
-
-    query_args = dict()
-    query_args["name"] = args.get("name", None)
-    if not query_args["name"]:
-        return jsonify(error='name not defined'), 400
-
-    o_groups = Group.objects(**query_args)
-    return jsonify({
-        'results': o_groups,
-        'failed': False,
-        'msg': "return list of group(s)"
-    })
-
-
-@group_pages.route('/groups', methods=['PUT'])
-@authenticate('getGroup')
-def put_groups(current_user=None):
+    resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
     query_args = dict()
     if "name" in args:
         query_args["name"] = args.get("name")
-    else:
-        return make_response('name not defined', 400)
+    o_groups = Group.objects(**query_args)
+    resp.add_result(o_groups)
+    return resp.get_response()
 
-    try:
-        if "child_groups" in args:
-            child_groups = list_parser(args.get("child_groups"))
-            o_child_groups = Group.objects(name__in=child_groups)
+
+@group_pages.route('/groups', methods=['PUT'])
+@authenticate('getGroup')
+def put_groups(current_user=None):
+    resp = ResponseFormater()
+    args = merge_args_data(request.args, request.get_json(silent=True))
+
+    name = args.get("name", None)
+    if name is None:
+        resp.failed(msg='name not defined')
+        return resp.get_response()
+
+    #Create Group
+    o_group = Group.objects(name=name).first()
+    if o_group is None:
+        try:
+            query_args = dict(name=name)
+            o_group = Group(**query_args)
+            resp.succeed(changed=True, status=HTTPStatus.CREATED)
+        except NotUniqueError:
+            resp.failed(msg='Duplicate Group: %s already exist' % (name))
+            return resp.get_response()
+    
+    #Set child Groups
+    if "child_groups" in args:
+        child_groups = list_parser(args.get("child_groups"))
+        o_child_groups = Group.objects(name__in=child_groups)
+        o_group["child_groups"] = o_child_groups
+        resp.changed()
+    
             query_args["child_groups"] = o_child_groups
         o_group = Group(**query_args)
+    
+    #Save group
+    if resp.get_changed():
         o_group.save()
 
-        if "parent_groups" in args:
-            parent_groups = list_parser(args.get("parent_groups"))
-            o_parent_groups = Group.objects(name__in=parent_groups)
-            for o_parent_group in o_parent_groups:
-                o_parent_group.update(add_to_set__child_groups=o_group)
-    except NotUniqueError:
-        return make_response('Duplicate Group: %s already exist' % (args.get("name")), 400)
+    #Set group as child group in parent group
+    if "parent_groups" in args:
+        parent_groups = list_parser(args.get("parent_groups"))
+        o_parent_groups = Group.objects(name__in=parent_groups)
+        for o_parent_group in o_parent_groups:
+            o_parent_group.update(add_to_set__child_groups=o_group)
+            resp.changed()
 
-    return jsonify({'message': 'Group Added'})
+    return resp.get_response()
 
 
 @group_pages.route('/groups', methods=['DELETE'])
 @authenticate('deleteGroups')
 def delete_groups(current_user=None):
+    resp = ResponseFormater()
     query_args = dict()
     if "name" in request.args:
-        query_args["name__in"] = request.args.get("name").split(',')
+        query_args["name__in"] = list_parser(request.args.get("name"))
     else:
-        return jsonify(error='name not defined'), 400
+        resp.failed(msg='name not defined')
+        return resp.get_response()
 
     o_groups = Group.objects(**query_args)
     if o_groups.count() < 1:
-        return jsonify(error='%s not found' % (request.args.get('name'))), 400
+        resp.failed(msg='%s not found' % (request.args.get('name')))
+        return resp.get_response()
     s_groups = ','.join(o_groups.scalar('name'))
     o_groups.delete()
-    return jsonify({'message': '%s have been deleted' % (s_groups)})
+    resp.succeed(msg='%s have been deleted' % (s_groups))
+    return resp.get_response()
