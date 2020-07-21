@@ -53,8 +53,26 @@ def put_groups(current_user=None):
         o_group["child_groups"] = o_child_groups
         resp.changed()
     
-            query_args["child_groups"] = o_child_groups
-        o_group = Group(**query_args)
+    #Set Hosts
+    if "hosts" in args:
+        hosts = list_parser(args.get("hosts"))
+        o_hosts = Host.objects(name__in=hosts)
+        o_group["hosts"] = o_hosts
+        resp.changed()
+    
+    #Set variables
+    barn_vars = args.get("vars", {})
+    for k, v in barn_vars.items():
+        if o_group.vars.get(k, None) != v:
+            o_group.vars[k] = v
+            resp.changed()
+    
+    # Delete variables
+    vars_to_remove = args.get("remove_vars", [])
+    for var_to_remove in vars_to_remove:
+        if var_to_remove in o_group.vars:
+            del o_group.vars[var_to_remove]
+            resp.changed()
     
     #Save group
     if resp.get_changed():
