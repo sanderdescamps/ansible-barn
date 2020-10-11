@@ -65,5 +65,5 @@ def delete_nodes(current_user=None):
         return resp.get_response()
     s_nodes = ','.join(o_nodes.scalar('name'))
     o_nodes.delete()
-    resp.succeed(msg='%s have been deleted' % (s_hosts))
+    resp.succeed(msg='%s have been deleted' % (s_nodes))
     return resp.get_response()
