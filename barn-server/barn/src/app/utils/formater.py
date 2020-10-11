@@ -3,6 +3,7 @@ from mongoengine.queryset import QuerySet
 from flask import jsonify, make_response
 from app.models import Node, Host, Group
 
+
 class ResponseFormater():
     def __init__(self):
         self._failed = False
@@ -11,7 +12,7 @@ class ResponseFormater():
         self._result = []
         self._status = 200
         self._header = {}
-    
+
     def __add__(self, other):
         if isinstance(other, ResponseFormater):
             new = ResponseFormater()
@@ -25,7 +26,6 @@ class ResponseFormater():
             return new
         else:
             raise TypeError
-
 
     def changed(self, changed=True):
         self._changed = changed
@@ -50,8 +50,9 @@ class ResponseFormater():
         return self
 
     def authentication_error(self, msg=None):
-        return self.add_header({'WWW.Authentication': 'Basic realm="login required"'}).failed(msg=msg, failed=True, status=401)
-
+        return self.add_header({
+            'WWW.Authentication': 'Basic realm="login required"'
+            }).failed(msg=msg, failed=True, status=401)
 
     def add_result(self, result):
         if isinstance(result, (dict, Host, Group, Node)):
@@ -79,7 +80,7 @@ class ResponseFormater():
     def get_changed(self):
         """ return if a change is registered """
         return self._changed
-    
+
     def get_response(self):
         """
             return json response object which can be used by Flask
