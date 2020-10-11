@@ -1,14 +1,15 @@
 # ansible-barn
-A storage place for information used by Ansible playbooks
-
+Ansible-barn or barn in short is a central variable server for Ansible. It provides a central location to store variables. Via Ansible modules you can easily get and set variables. Via an API ansible will store the variables in a MongoDB database. At the moment Ansible-barn is still under construction. 
 
 # API
 
-## GET /nodes/
-**description:** Get all host or group 
+## Methodes
+
+### GET hosts/groups/nodes
+**description:** Get one or all hosts or groups
 
 **properties:**
-- *type*: type of the node {host, group}
+- *type*: type of the node {host, group}. Only usefull when querying nodes. 
 - *name*: Name of the host of Group
 
 **return:**
@@ -27,7 +28,7 @@ A storage place for information used by Ansible playbooks
       ]
     }
     
-## POST /nodes/
+### POST /nodes/
 **description:** Add new host or group
 
 **properties:**
@@ -49,3 +50,15 @@ A storage place for information used by Ansible playbooks
     }
 
 
+# Inventory
+## Generate Ansible inventory file
+
+Write the full inventory to a json-file. The json-file can directly be read by Ansible. No authentication required. 
+
+    curl -s http://127.0.0.1:5000/inventory_file > test_inventory.json
+
+
+## Install barn inventory 
+
+    mkdir -p ~/.ansible/plugins/inventory/
+    ln -s ~/git/ansible-barn/barn-playbook/inventory_plugins/barn.py ~/.ansible/plugins/inventory/barn.py
