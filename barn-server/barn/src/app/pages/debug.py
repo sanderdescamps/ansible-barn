@@ -24,7 +24,7 @@ def init(current_user=None):
     Host.objects().delete()
     h_srvplex01 = Host(name="srvplex01.myhomecloud.be")
     h_srvplex01.save()
-    h_srvdns01 = Host(name="srvdns01.myhomecloud.be")
+    h_srvdns01 = Host(name="srvdns01.myhomecloud.be", vars=dict(deploytime="today", env_environment="staging"))
     h_srvdns01.save()
     h_srvdns02 = Host(name="srvdns02.myhomecloud.be").save()
     h_srvdns02.save()
