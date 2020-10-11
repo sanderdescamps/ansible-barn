@@ -4,5 +4,10 @@
     "--generated-members=objects",
     "--good-names=e,k,v,i",
     "--max-line-length=120"
+  ],
+  "spellright.language": [],
+  "spellright.documentTypes": [
+    "latex",
+    "plaintext"
   ]
 }
