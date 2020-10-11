@@ -1,30 +1,28 @@
-from flask import request, jsonify, Blueprint
-from app.models import Node
-from app.utils import merge_args_data, list_parser
+from flask import jsonify, Blueprint
+from app.models import Host, Group
 from app.auth import authenticate
 
 inventory_pages = Blueprint('inventory', __name__)
 
 
-@inventory_pages.route('/inventory', methods=['GET'])
-@authenticate()
-def get_ansible_inventory(current_user=None):
-    args = merge_args_data(request.args, request.get_json(silent=True))
-    name = list_parser(args.get("name", None))
-    query_args = dict()
-    if name is not None:
-        query_args["name__in"] = name
-    else:
-        return jsonify(error='name not defined'), 400
+@inventory_pages.route('/inventory_file', methods=['GET'])
+@authenticate("guest")
+def get_ansible_inventory_file(current_user=None):
+    o_hosts = Host.objects()
+    d_hosts = {}
+    for host in o_hosts:
+        d_hosts[host.name] = host.vars
 
-    o_nodes = Node.objects(**query_args)
+    o_groups = Group.objects()
+    d_groups = {}
+    for group in o_groups:
+        d_groups[group.name] = dict(vars=group.vars, hosts={}, children={})
+        if len(group.hosts) > 0:
+            d_groups[group.name]["hosts"] = {h.name:None for h in group.hosts}
 
-    o_hosts = []
-    for o_node in o_nodes:
-        o_hosts.extend(o_node.get_hosts())
-    o_hosts = list(set(o_hosts))
-    s_hosts = []
-    for o_host in o_hosts:
-        s_hosts.append(o_host.name)
+        if len(group.child_groups) > 0:
+            d_groups[group.name]["children"] = {g.name:None for g in group.child_groups}
 
-    return jsonify({'results': s_hosts, "o_hosts": o_hosts})
+    result = dict(all=dict(hosts=d_hosts, children=d_groups))
+    return jsonify(result)
+    
