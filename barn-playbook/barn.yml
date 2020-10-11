@@ -1,0 +1,6 @@
+---
+plugin: barn
+barn_user: sdescamps
+barn_password: testpassword
+barn_hostname: 127.0.0.1
+barn_port: 5000
