@@ -10,8 +10,22 @@ from app.pages.nodes import node_pages
 from app.pages.inventory import inventory_pages
 from app.pages.debug import debug_pages
 from app.models import User
+from flask_swagger_ui import get_swaggerui_blueprint
 
 app = Flask(__name__)
+
+#Swagger
+SWAGGER_URL = '/swagger'
+API_URL = '/static/swagger.yml'
+SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': "Ansible Barn"
+    }
+)
+app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
+
 cfg_path = None
 if len(sys.argv) > 1:
     cfg_path = sys.argv[1]

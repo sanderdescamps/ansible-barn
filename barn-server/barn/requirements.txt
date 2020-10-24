@@ -3,3 +3,5 @@ Werkzeug==1.0.1
 flask_mongoengine==0.9.5
 mongoengine==0.20.0
 PyJWT==1.7.1
+flask-swagger
+flask-swagger-ui

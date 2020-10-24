@@ -1,0 +1,71 @@
+openapi: 3.0.0
+info:
+  title: Barn
+  description: Dynamic inventory for Ansible
+  version: 1.0.0
+paths:
+  /login:
+    post:
+      summary: Login into Barn
+      description: Optional extended description in Markdown.
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Authentication token
+  /register:
+    get:
+      summary: Register new user
+      responses:
+        "200":
+          description: OK
+  /nodes:
+    get:
+      summary: Get list of nodes
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changed:
+                    type: boolean
+                    description: True when a change has been made inside Barn
+                  failed:
+                    type: boolean
+                    description: True when error happens
+                  msg:
+                    type: string
+                    description: Error message if something went wrong
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schema/Node'
+                    description: True when error happens
+        "401":
+          description: Failed to login
+servers:
+  - url: https://barn.mybomecloud.be/
+components:
+  securitySchemes:
+    basicAuth:
+      type: https
+      scheme: basic
+
