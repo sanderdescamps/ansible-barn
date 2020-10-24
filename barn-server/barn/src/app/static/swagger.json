@@ -1,0 +1,38 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "description": "Barn",
+      "version": "1.0.0",
+      "title": "Ansible Barn",
+      "contact": {
+        "email": "sander_descamps@hotmail.com"
+      },
+      "license": {
+        "name": "GPL-3.0 License",
+        "url": "https://opensource.org/licenses/GPL-3.0"
+      }
+    },
+    "paths": {
+      "/login": {
+        "post": {
+          "description": "Login into Barn and receive a login token",
+          "parameters": [
+            {
+              "name": "username",
+              "in": "path",
+              "description": "username to fetch",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      }
+    }
+  }
