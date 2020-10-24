@@ -27,3 +27,17 @@ services:
             - PYTHONUNBUFFERED=1
         ports:
             - "5000:5000"
+    nginx:
+        image: nginx:latest
+        container_name: reverse_proxy
+        volumes:
+            - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf
+        #     - ./nginx/cert/barn.myhomecloud.be.pem:/etc/nginx/cert/barn.pem
+            - ./nginx/cert/barn.myhomecloud.be.key:/etc/nginx/cert/barn.key
+            - ./nginx/cert/barn.myhomecloud.be.crt:/etc/nginx/cert/barn.crt
+        ports:
+            - 80:80
+            - 443:443
+        links:
+            - barn
+
