@@ -48,5 +48,7 @@ def login_user():
 @authenticate("manageUsers")
 @user_pages.route('/users', methods=['GET'])
 def get_all_users():
+    resp = ResponseFormater()
     users = User.objects()
-    return jsonify({"result": users.exclude("id")})
+    resp.add_result(users.exclude("id"))
+    return resp.get_response()
