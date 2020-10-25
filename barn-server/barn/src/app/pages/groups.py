@@ -68,7 +68,7 @@ def put_groups(current_user=None):
             resp.changed()
     
     # Delete variables
-    vars_to_remove = args.get("remove_vars", [])
+    vars_to_remove = args.get("vars_absent", [])
     for var_to_remove in vars_to_remove:
         if var_to_remove in o_group.vars:
             del o_group.vars[var_to_remove]
