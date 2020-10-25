@@ -58,7 +58,7 @@ def put_hosts(current_user=None):
             resp.changed()
 
     # Delete variables
-    vars_to_remove = args.get("remove_vars", [])
+    vars_to_remove = args.get("vars_absent", [])
     for var_to_remove in vars_to_remove:
         if var_to_remove in o_host.vars:
             del o_host.vars[var_to_remove]

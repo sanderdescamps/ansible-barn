@@ -39,7 +39,7 @@ class ActionModule(ActionBase):
                     "name": task_vars.get("inventory_hostname"),
                     'type': "host",
                     "vars": barn_vars,
-                    "remove_vars": vars_to_remove
+                    "vars_absent": vars_to_remove
                 }
 
                 query_args = dict()
