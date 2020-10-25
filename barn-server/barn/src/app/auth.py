@@ -1,7 +1,7 @@
 from functools import wraps
 import jwt
 from werkzeug.security import check_password_hash
-from flask import request, jsonify, make_response, current_app
+from flask import request, make_response, current_app
 from app.models import User
 from app.utils.formater import ResponseFormater
 
@@ -11,10 +11,13 @@ def authenticate(*roles):
         @wraps(f)
         def decorator(*args, **kwargs):
             resp = ResponseFormater()
-            current_user = None
+            current_user = kwargs.get("current_user",None)
+            
 
             token = request.headers.get('x-access-tokens', None)
-            if token is not None and token != "":
+            if current_user:
+                pass
+            elif token is not None and token != "":
                 try:
                     data = dict(jwt.decode(
                         token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
@@ -32,15 +35,16 @@ def authenticate(*roles):
                 if not check_password_hash(current_user.password_hash, auth.password):
                     return resp.authentication_error(msg='invalid username and password').get_response()
             elif "guest" in roles:
-                return f(*args, current_user=None, **kwargs)
+                kwargs["current_user"] = current_user
+                return f(*args, **kwargs)
 
             if current_user is None:
                 return resp.authentication_error(msg='Unauthorized request. Username/password or token required').get_response()
             missing_roles = current_user.missing_roles(roles)
             if len(missing_roles) > 1:
                 return resp.authentication_error(msg='Not permited, missing roles (%s)' % (','.join(missing_roles))).get_response()
-
-            return f(*args, current_user=current_user, **kwargs)
+            kwargs["current_user"] = current_user
+            return f(*args, **kwargs)
 
         return decorator
     return require_token
