@@ -19,18 +19,18 @@ class ActionModule(ActionBase):
 
         module_args = self._task.args.copy()
 
-        barn_host = module_args.get("host", None)
-        barn_port = module_args.get("port", 443)
-        barn_user = module_args.get("user", None)
-        barn_password = module_args.get("password", None)
-        token = module_args.get("token", None)
+        barn_host = module_args.get("barn_host", None)
+        barn_port = module_args.get("barn_port", 443)
+        barn_user = module_args.get("barn_user", None)
+        barn_password = module_args.get("barn_password", None)
+        token = module_args.get("barn_token", None)
         state = module_args.get("state", None)
 
 
         if barn_host is None:
             result['changed'] = False
             result['failed'] = True
-            result['msg'] = "host is required"
+            result['msg'] = "barn_host is required"
             return result
 
         if state == 'present':
@@ -41,7 +41,7 @@ class ActionModule(ActionBase):
                 if module_args.get("vars", None):
                     data["vars"] = module_args.get("vars")
                 if module_args.get("remove_vars", None):
-                    data["vars_absent"] = module_args.get("remove_vars")
+                    data["vars_absent"] = ensure_type(module_args.get("remove_vars"), 'list')
                 if module_args.get("groups", None):
                     data["groups"] = ensure_type(module_args.get("groups"), 'list')
                 if module_args.get("groups_present", None):
