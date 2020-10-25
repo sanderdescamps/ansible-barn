@@ -3,16 +3,17 @@ info:
   title: Barn
   description: Dynamic inventory for Ansible
   version: 1.0.0
+servers:
+  - url: https://barn.myhomecloud.be/
 paths:
   /login:
     post:
       summary: Login into Barn
-      description: Optional extended description in Markdown.
       security:
         - basicAuth: []
       responses:
         "200":
-          description: OK
+          description: Successfull login
           content:
             application/json:
               schema:
@@ -30,42 +31,181 @@ paths:
   /nodes:
     get:
       summary: Get list of nodes
+      security:
+        - basicAuth: []
+      parameters:
+          - in: query
+            name: name
+            schema:
+              type: string
+            required: false
+            description: search on name of node
+          - in: query
+            name: type
+            schema:
+              type: string
+              enum: 
+                - "host"
+                - "group"
+            required: false
+            description: Type of the node. (ex. host, group,..)
+
+      responses:
+        "200":
+          $ref: '#/components/responses/DefaultResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /hosts:
+    get:
+      summary: Get list of hosts
+      security:
+        - basicAuth: []
+      parameters:
+          - in: query
+            name: name
+            schema:
+              type: string
+            required: false
+            description: search on name of node
+      responses:
+        "200":
+          $ref: '#/components/responses/DefaultResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      summary: Add/Update host
+      security:
+        - basicAuth: []
       requestBody:
-        description: Optional description in *Markdown*
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Pet'
+              type: object
+              properties:
+                name:
+                  title: Name of the host
+                  type: string
+                  description: Name of the Host
+                groups:
+                  type: array
+                  items:
+                    type: string
+                  description: "Alias for 'groups_present'"
+                groups_present:
+                  type: array
+                  items:
+                    type: string
+                  description: Ensures that host belongs to the groups. Keeps the already assigned groups. 
+                groups_absent:
+                  type: array
+                  items:
+                    type: string
+                  description: Removes host form groups
+                groups_set:
+                  type: array
+                  items:
+                    type: string
+                  description: Host only belongs to the given groups. Mutually exclusive with groups, groups_present, groups_absent 
+                create_groups:
+                  type: boolean
+                  default: true
+                  description: When an unexisting group is configured it will be created. 
+                vars:
+                  type: object
+                  description: Variables to add or update
+                vars_absent:
+                  type: array
+                  description: Removes variables from host
+                  items:
+                    type: string
+              required:
+                - name
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
+          $ref: '#/components/responses/DefaultResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  responses:
+    DefaultResponse:
+      description: Default response with results
+      content: 
+        application/json:
               schema:
                 type: object
                 properties:
                   changed:
                     type: boolean
+                    default: false
                     description: True when a change has been made inside Barn
                   failed:
                     type: boolean
-                    description: True when error happens
+                    default: false
+                    description: True when error occured
                   msg:
                     type: string
-                    description: Error message if something went wrong
+                    default: ""
+                    description: Output message in case of an error
                   results:
                     type: array
                     items:
-                      $ref: '#/components/schema/Node'
-                    description: True when error happens
-        "401":
-          description: Failed to login
-servers:
-  - url: https://barn.mybomecloud.be/
-components:
-  securitySchemes:
-    basicAuth:
-      type: https
-      scheme: basic
+                      $ref: '#/components/schemas/Node'
+                    description: List of results
+    UnauthorizedError:
+      description: Unautorized request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              failed:
+                type: boolean
+                default: true
+                description: True when error happens
+              msg:
+                type: string
+                description: Error message if something went wrong
 
+
+  schemas:
+    Node:
+      oneOf:
+        - $ref: '#/components/schemas/Host'
+        - $ref: '#/components/schemas/Group'
+    Host:
+      type: object
+      properties:
+        name:
+          type: string
+        cls:
+          type: string
+          enum: 
+            - "host"
+        vars:
+          type: object
+    Group:
+      type: object
+      properties:
+        name:
+          type: string
+        cls:
+          type: string
+          enum: 
+            - "group"
+        vars:
+          type: object
+        child_groups:
+          type: array
+          description: List of groupnames
+          items: 
+            type: string
+        hosts:
+          type: array
+          description: List of hostnames
+          items: 
+            type: string
