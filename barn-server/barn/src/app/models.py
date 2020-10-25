@@ -1,6 +1,6 @@
 import uuid
 from abc import abstractmethod
-from mongoengine import Document, StringField, BooleanField, DictField, ListField, ReferenceField
+from mongoengine import Document, StringField, DictField, ListField, ReferenceField
 from werkzeug.security import generate_password_hash
 
 
