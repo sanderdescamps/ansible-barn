@@ -53,7 +53,7 @@ class ActionModule(ActionBase):
                 query_args["url_password"] = barn_password
                 query_args["force_basic_auth"] = True
 
-            r = Request().open("GET", "http://%s:%s/nodes" %
+            r = Request().open("POST", "http://%s:%s/nodes" %
                                (barn_host, barn_port), **query_args)
             barn_resp = json.loads(r.read())
             self._display.vvv("Response form Barn: %s"%(barn_resp))
