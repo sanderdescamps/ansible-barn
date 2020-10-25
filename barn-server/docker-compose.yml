@@ -14,7 +14,7 @@ services:
         volumes:
             - ./mongodb/src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
             - ./mongodb/mongo-volume:/data/db
-    barn:
+    barn_api:
         image: barn:latest
         container_name: barn
         build:
@@ -39,5 +39,5 @@ services:
             - 80:80
             - 443:443
         links:
-            - barn
+            - barn_api
 
