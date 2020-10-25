@@ -11,8 +11,6 @@ class ActionModule(ActionBase):
 
     def run(self, tmp=None, task_vars=None):
 
-        changed = False
-
         if task_vars is None:
             task_vars = dict()
 
@@ -21,11 +19,11 @@ class ActionModule(ActionBase):
 
         module_args = self._task.args.copy()
 
-        barn_host = module_args.get("host", None)
-        barn_port = module_args.get("port", 443)
-        barn_user = module_args.get("user", None)
-        barn_password = module_args.get("password", None)
-        token = module_args.get("token", None)
+        barn_host = module_args.get("barn_host", None)
+        barn_port = module_args.get("barn_port", 443)
+        barn_user = module_args.get("barn_user", None)
+        barn_password = module_args.get("barn_password", None)
+        token = module_args.get("barn_token", None)
         load_to_facts = module_args.get("load_to_facts", False)
         include = ensure_type(module_args.get("include", []),'list')
         exclude = ensure_type(module_args.get("exclude", []),'list')
@@ -33,7 +31,7 @@ class ActionModule(ActionBase):
         if barn_host is None:
             result['changed'] = False
             result['failed'] = True
-            result['msg'] = "host is required"
+            result['msg'] = "barn_host is required"
             return result
 
         try:
@@ -57,8 +55,11 @@ class ActionModule(ActionBase):
 
             r = Request().open("GET", "http://%s:%s/nodes" %
                                (barn_host, barn_port), **query_args)
-            barn_vars = json.loads(r.read()).get(
-                "results", {})[0].get("vars", {})
+            barn_resp = json.loads(r.read())
+            self._display.vvv("Response form Barn: %s"%(barn_resp))
+            barn_vars = barn_resp.get(
+                "result", {})[0].get("vars", {})
+            
 
             if len(include) > 0:
                 barn_vars = {i: barn_vars[i] for i in include}
@@ -72,16 +73,14 @@ class ActionModule(ActionBase):
         except urllib_error.HTTPError as e:
             result["status"] = int(getattr(e, 'code', -1))
             try:
-                body = json.loads(e.read())
+                result = json.loads(e.read())
             except AttributeError:
-                body = {}
-            result["error"] = body.get("error", "")
-            result['failed'] = True
+                result["status"] = 500
+                result["error"] = "Can't parse API response to json response"
         except timeout:
             result["status"] = 500
             result["error"] = "Connection timeout"
         except Exception as e:
             raise AnsibleActionFail(e)
 
-        result["changed"] = changed
         return result
