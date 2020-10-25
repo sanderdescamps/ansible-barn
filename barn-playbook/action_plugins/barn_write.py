@@ -64,11 +64,10 @@ class ActionModule(ActionBase):
             except urllib_error.HTTPError as e:
                 result["status"] = int(getattr(e, 'code', -1))
                 try:
-                    body = json.loads(e.read())
+                    result = json.loads(e.read())
                 except AttributeError:
-                    body = {}
-                result["error"] = body.get("error", "")
-                result['failed'] = True
+                    result["status"] = 500
+                    result["error"] = "Can't parse API response to json response"
             except timeout:
                 result["status"] = 500
                 result["error"] = "Connection timeout"
@@ -76,7 +75,7 @@ class ActionModule(ActionBase):
                 raise AnsibleActionFail(e)
 
         elif state == "absent":
-            resp_json["msg"] = "remove %s from barn" % (
+            result["msg"] = "remove %s from barn (under construction)" % (
                 task_vars.get("inventory_hostname"))
 
         return result
