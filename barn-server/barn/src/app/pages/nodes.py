@@ -1,4 +1,4 @@
-from flask import request, jsonify, Blueprint
+from flask import request, Blueprint
 from app.models import Node
 from app.utils import merge_args_data, list_parser
 from app.auth import authenticate
