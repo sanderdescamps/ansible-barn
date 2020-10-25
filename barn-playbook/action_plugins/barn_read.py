@@ -4,21 +4,7 @@ from ansible.plugins.action import ActionBase
 from ansible.module_utils.urls import Request
 from ansible.errors import AnsibleActionFail
 from ansible.module_utils.urls import urllib_error
-
-
-def list_parser(to_parse):
-    """
-        split a string or list of strings into seperate strings. Seperated by comma or spaces.
-    """
-    output = []
-    if type(to_parse) is str:
-        output = to_parse.replace(', ', ',').replace(' ', ',').split(',')
-    elif type(to_parse) is list:
-        for i in to_parse:
-            output.extend(list_parser(i))
-    else:
-        output = str(to_parse).replace(', ', ',').replace(' ', ',').split(',')
-    return list(set(output))
+from ansible.config.manager import ensure_type
 
 
 class ActionModule(ActionBase):
@@ -41,8 +27,8 @@ class ActionModule(ActionBase):
         barn_password = module_args.get("password", None)
         token = module_args.get("token", None)
         load_to_facts = module_args.get("load_to_facts", False)
-        include = list_parser(module_args.get("include", []))
-        exclude = list_parser(module_args.get("exclude", []))
+        include = ensure_type(module_args.get("include", []),'list')
+        exclude = ensure_type(module_args.get("exclude", []),'list')
 
         if barn_host is None:
             result['changed'] = False
