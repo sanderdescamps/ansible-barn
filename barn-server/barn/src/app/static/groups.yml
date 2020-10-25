@@ -1,0 +1,101 @@
+get:
+  summary: Get list of groups
+  security:
+    - basicAuth: []
+  parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        required: false
+        description: search on name of group
+      - in: query
+        name: parrent_vars
+        schema:
+          type: string
+        required: false
+        description: (under construction) Return also the vars from the host its groups
+  responses:
+    "200":
+      $ref: './swagger.yml#/components/responses/DefaultResponse'
+    '401':
+      $ref: './swagger.yml#/components/responses/UnauthorizedError'
+post:
+  summary: Search for groups
+  security:
+    - basicAuth: []
+  parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        required: false
+        description: search on name of node
+      - in: query
+        name: parrent_vars
+        schema:
+          type: string
+        required: false
+        description: (under construction) Return also the vars from the host its groups 
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Name of the group
+            groups:
+              type: array
+              items:
+                type: string
+              description: (under construction) Return all hosts which belong to a given list of groups
+            vars:
+              type: object
+              description: (under construction) Return all hosts which have specific variables
+  responses:
+    "200":
+      $ref: './swagger.yml#/components/responses/DefaultResponse'
+    '401':
+      $ref: './swagger.yml#/components/responses/UnauthorizedError'
+put:
+  summary: Add/Update group
+  security:
+    - basicAuth: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Name of the group
+            child_groups:
+              type: array
+              items:
+                type: string
+              description: Confiure the group its child groups
+            hosts:
+              type: array
+              items:
+                type: string
+              description: Congigure the hosts which belong to the group
+            vars:
+              type: object
+              description: Variables to add or update
+            vars_absent:
+              type: array
+              description: Removes variables
+              items:
+                type: string
+          required:
+            - name
+  responses:
+    "200":
+      $ref: './swagger.yml#/components/responses/DefaultResponse'
+    '401':
+      $ref: './swagger.yml#/components/responses/UnauthorizedError'
