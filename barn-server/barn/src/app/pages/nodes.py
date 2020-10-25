@@ -13,6 +13,25 @@ node_pages = Blueprint('nodes', __name__)
 @authenticate('getNode')
 def get_nodes(current_user=None):
     resp = ResponseFormater()
+    args = request.args
+ 
+    query_args = dict()
+    if "name" in args:
+        query_args["name"] = args.get("name")
+    if "type" in args:
+        node_type = args.get("type")
+        if node_type.lower() == "host":
+            query_args["_cls"] = "Node.Host"
+        elif node_type.lower() == "group":
+            query_args["_cls"] = "Node.Group"
+    o_nodes = Node.objects(**query_args)
+    resp.add_result(o_nodes)
+    return resp.get_response()
+
+@node_pages.route('/nodes', methods=['POST'])
+@authenticate('getNode')
+def post_nodes(current_user=None):
+    resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
     query_args = dict()
@@ -28,10 +47,9 @@ def get_nodes(current_user=None):
     resp.add_result(o_nodes)
     return resp.get_response()
 
-
 @node_pages.route('/nodes', methods=['PUT'])
 @authenticate('addNode')
-def post_nodes(current_user=None):
+def put_nodes(current_user=None):
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
     node_type = args.get("type", None)
@@ -39,9 +57,9 @@ def post_nodes(current_user=None):
         resp.failed(msg='type not defined')
         return resp.get_response()
     elif node_type.lower() == "host":
-        return resp + put_hosts(current_user=current_user)
+        return put_hosts(current_user=current_user,resp=resp)
     elif node_type.lower() == "group":
-        return resp + put_groups(current_user=current_user)
+        return put_groups(current_user=current_user,resp=resp)
     else:
         resp.failed(msg='unknown type: %s' % (node_type))
         return resp.get_response()

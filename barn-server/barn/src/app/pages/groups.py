@@ -1,6 +1,6 @@
+from http import HTTPStatus
 from flask import Blueprint, request
 from mongoengine.errors import NotUniqueError
-from http import HTTPStatus
 from app.utils import list_parser, merge_args_data
 from app.auth import authenticate
 from app.models import Group, Host
@@ -12,9 +12,10 @@ group_pages = Blueprint('group', __name__)
 
 @group_pages.route('/groups', methods=['GET'])
 @authenticate('getGroup')
-def get_groups(current_user=None):
-    resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
+def get_groups(current_user=None, resp=None):
+    if resp is None:
+        resp = ResponseFormater()
+    args = request.args
 
     query_args = dict()
     if "name" in args:
@@ -26,8 +27,9 @@ def get_groups(current_user=None):
 
 @group_pages.route('/groups', methods=['PUT'])
 @authenticate('getGroup')
-def put_groups(current_user=None):
-    resp = ResponseFormater()
+def put_groups(current_user=None, resp=None):
+    if resp is None:
+        resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
     name = args.get("name", None)

@@ -13,7 +13,20 @@ host_pages = Blueprint('host', __name__)
 
 @host_pages.route('/hosts', methods=['GET'])
 @authenticate('getHost')
-def get_hosts(current_user=None):
+def get_hosts(current_user=None, resp=None):
+    if resp is None:
+        resp = ResponseFormater()
+    args = request.args
+
+    query_args = dict()
+    if "name" in args:
+        query_args["name"] = args.get("name")
+    resp.add_result(Host.objects(**query_args))
+    return resp.get_response()
+
+@host_pages.route('/hosts', methods=['POST'])
+@authenticate('getHost')
+def post_hosts(current_user=None):
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
@@ -25,8 +38,9 @@ def get_hosts(current_user=None):
 
 @host_pages.route('/hosts', methods=['PUT'])
 @authenticate('addHost')
-def put_hosts(current_user=None):
-    resp = ResponseFormater()
+def put_hosts(current_user=None, resp=None):
+    if resp is None:
+        resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
     
 
