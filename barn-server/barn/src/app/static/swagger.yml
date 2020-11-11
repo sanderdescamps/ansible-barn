@@ -100,7 +100,7 @@ components:
       properties:
         name:
           type: string
-        cls:
+        type:
           type: string
           enum: 
             - "host"
@@ -111,7 +111,7 @@ components:
       properties:
         name:
           type: string
-        cls:
+        type:
           type: string
           enum: 
             - "group"
