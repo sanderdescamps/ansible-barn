@@ -91,6 +91,22 @@ class Node(Document):
     def to_barn_dict(self):
         pass
 
+    @classmethod
+    def from_json(cls, json_data, created=False, append=False):
+        if json_data.get("type","").lower() == "host":
+            return Host.from_json(json_data, created=created, append=append)
+        elif json_data.get("type","").lower() == "group":
+            return Group.from_json(json_data, created=created, append=append)
+        else:
+            raise ValueError
+
+    def set_vars(self, vars_data):
+        self.vars = vars_data
+
+    def update_vars(self, vars_data):
+        self.vars.update(vars_data)
+
+
 
 class Host(Node):
     def get_hosts(self):
@@ -99,9 +115,22 @@ class Host(Node):
     def to_barn_dict(self):
         return dict(
             name=self.name,
-            cls="host",
+            type="host",
             vars=self.vars
         )
+    @classmethod
+    def from_json(cls, json_data, created=False, append=False):
+        if json_data.get("name"):
+            o_host = Host.objects(name=json_data.get("name")).first()
+            if not o_host:
+                o_host = Host(name=json_data.get("name"))
+            if append:
+                o_host.update_vars(json_data.get("vars",{}))
+            else:
+                o_host.set_vars(json_data.get("vars",{}))
+            return o_host
+        else:
+            raise ValueError
 
 class Group(Node):
     # hosts = ListField(default=[])
@@ -118,8 +147,82 @@ class Group(Node):
     def to_barn_dict(self):
         return dict(
             name=self.name,
-            cls="group",
+            type="group",
             vars=self.vars,
             hosts=[host.name for host in self.hosts],
             child_groups=[group.name for group in self.child_groups]
         )
+
+    def set_child_groups(self,child_groups):
+        for child_group in child_groups:
+            self._set_child_group(child_group)
+            
+    def _set_child_group(self, child_group):
+        if isinstance(child_group, Group):
+            self.child_groups = [child_group]
+        elif isinstance(child_group, str):
+            o_child_group = Group.objects(name=child_group).first()
+            if o_child_group: 
+                self.child_groups = [o_child_group]
+        else:
+            raise TypeError
+
+    def _add_child_group(self, child_group):
+        if isinstance(child_group, Group) and child_group not in self.child_groups:
+            self.child_groups.append(child_group)
+        elif isinstance(child_group, str):
+            o_child_group = Group.objects(name=child_group).first()
+            if o_child_group: 
+                self.child_groups.append(o_child_group)
+        else:
+            raise TypeError
+
+    def add_child_groups(self, child_groups):
+        for child_group in child_groups:
+            self._add_child_group(child_group)
+
+    def _set_host(self, host):
+        if isinstance(host, Host):
+            self.hosts = [host]
+        elif isinstance(host, str):
+            o_host = Host.objects(name=host).first()
+            if o_host:
+                self.hosts = [o_host]
+        else:
+            raise TypeError
+
+    def set_hosts(self, hosts):
+        for host in hosts:
+            self._set_host(host)
+
+    def _add_host(self, host):
+        if isinstance(host, Host) and host not in self.hosts:
+            self.hosts.append(host)
+        elif isinstance(host, str):
+            o_host = Host.objects(name=host).first()
+            if o_host and host not in self.hosts:
+                self.hosts.append(host)
+        else:
+            raise TypeError
+
+    def add_hosts(self, hosts):
+        for host in hosts:
+            self._add_host(host)
+
+    @classmethod
+    def from_json(cls, json_data, created=False, append=False):
+        if json_data.get("name"):
+            o_group = Group.objects(name=json_data.get("name")).first()
+            if not o_group:
+                o_group = Group(name=json_data.get("name"))
+                if append:
+                    o_group.update_vars(json_data.get("vars",{}))
+                    o_group.add_child_groups(json_data.get("child_groups",[]))
+                    o_group.add_hosts(json_data.get("hosts",[]))
+                else:
+                    o_group.set_vars(json_data.get("vars",{}))
+                    o_group.set_child_groups(json_data.get("child_groups",[]))
+                    o_group.set_hosts(json_data.get("hosts",[]))
+            return o_group
+        else:
+            raise ValueError
