@@ -9,6 +9,8 @@ from app.pages.groups import group_pages
 from app.pages.nodes import node_pages
 from app.pages.inventory import inventory_pages
 from app.pages.debug import debug_pages
+from app.pages.export import export_pages
+from app.pages.upload import upload_pages
 from app.models import User
 from flask_swagger_ui import get_swaggerui_blueprint
 
@@ -53,6 +55,8 @@ app.register_blueprint(user_pages)
 app.register_blueprint(group_pages)
 app.register_blueprint(node_pages)
 app.register_blueprint(inventory_pages)
+app.register_blueprint(export_pages)
+app.register_blueprint(upload_pages)
 if config.get_barn_config().get("debug_mode", False):
     app.register_blueprint(debug_pages)
 
