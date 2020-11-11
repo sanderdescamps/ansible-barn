@@ -1,6 +1,6 @@
 import sys
 import os
-from flask import Flask
+from flask import Flask, url_for, redirect
 from flask_mongoengine import MongoEngine
 from app.config import ConfigLoader
 from app.pages.users import user_pages
@@ -13,6 +13,11 @@ from app.models import User
 from flask_swagger_ui import get_swaggerui_blueprint
 
 app = Flask(__name__)
+
+@app.route('/favicon.ico')
+def favicon():
+    return redirect(url_for('static', filename='favicon.ico'))
+
 
 #Swagger
 SWAGGER_URL = '/swagger'
