@@ -15,6 +15,26 @@ def list_parser(to_parse):
         output = list_parser(str(to_parse))
     return list(set(output))
 
+def remove_empty_fields(data):
+    output = None
+    if isinstance(data, dict):
+        output = {}
+        for key,value in data.items():
+            if value and (isinstance(value, dict) or isinstance(value,list)):
+                output[key] = remove_empty_fields(value)
+            elif bool(value):
+                output[key] = value
+    elif isinstance(data, list):
+        output = []
+        for value in data:
+            if data and (isinstance(value, dict) or isinstance(value,list)):
+                output.append(remove_empty_fields(value))
+            elif bool(value):
+                output.append(value)
+    else:
+        print(type(data))
+        output = data
+    return output
 
 def merge_args_data(args, data=None):
     """
