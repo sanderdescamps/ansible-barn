@@ -4,7 +4,7 @@ info:
   description: Dynamic inventory for Ansible
   version: 1.0.0
 servers:
-  - url: https://barn.myhomecloud.be/
+  - url: /
 paths:
   /login:
     post:
