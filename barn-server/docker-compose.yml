@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 
 services:
     mongodb:
@@ -14,9 +14,10 @@ services:
         volumes:
             - ./mongodb/src/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
             - ./mongodb/mongo-volume:/data/db
+        networks:
+            - barn_network
     barn_api:
         image: barn:latest
-        container_name: barn
         build:
             context: ./barn/
             dockerfile: ./Dockerfile
@@ -27,6 +28,8 @@ services:
             - PYTHONUNBUFFERED=1
         ports:
             - "5000:5000"
+        networks:
+            - barn_network
     nginx:
         image: nginx:latest
         container_name: reverse_proxy
@@ -40,4 +43,8 @@ services:
             - 443:443
         links:
             - barn_api
+        networks:
+            - barn_network
+networks:
+    barn_network:
 
