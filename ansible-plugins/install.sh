@@ -7,8 +7,8 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 for action_plugin in "$CURRENT_DIR/action_plugins"/*.py
 do
-  echo "Create symlink: $action_plugin --> ~/.ansible/plugins/action_plugins/$(basename $action_plugin)"
-  ln -sf $action_plugin ~/.ansible/plugins/action_plugins/$(basename $action_plugin)
+  echo "Create symlink: $action_plugin --> ~/.ansible/plugins/action/$(basename $action_plugin)"
+  ln -sf $action_plugin ~/.ansible/plugins/action/$(basename $action_plugin)
 done
 
 for module in "$CURRENT_DIR/modules"/*.py
