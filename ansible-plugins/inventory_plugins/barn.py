@@ -8,6 +8,7 @@ from ansible.module_utils.urls import Request
 from ansible.errors import AnsibleParserError
 import json
 import re
+import os
 __metaclass__ = type
 
 DOCUMENTATION = '''
@@ -62,6 +63,7 @@ class InventoryModule(BaseInventoryPlugin):
             fetch_variables=False
         )
 
+
     def verify_file(self, path):
         '''Checks if the barn config file is a valid config file.
         '''
@@ -73,10 +75,22 @@ class InventoryModule(BaseInventoryPlugin):
             self.display.vv("Unable to parse Barn Inventory")
         return valid
 
+
     def parse(self, inventory, loader, path, cache=True):
         ''' parses the inventory file '''
 
-        self._load_connection_file(path, loader)
+        
+        if os.path.exists(os.path.join(os.environ['HOME'],".barn.yml")): 
+            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yml"), loader)
+        elif os.path.exists(os.path.join(os.environ['HOME'],".barn.yaml")): 
+            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yaml"), loader)
+        if os.path.exists("/etc/barn/barn.yml"):
+            self._load_connection_file("/etc/barn/barn.yml", loader)
+        elif os.path.exists("/etc/barn/barn.yaml"):
+            self._load_connection_file("/etc/barn/barn.yaml", loader)
+        
+        if not path.endswith("@barn"):
+            self._load_connection_file(path, loader)
 
         query_args = dict()
         query_args["headers"] = {'Content-type': 'application/json'}
