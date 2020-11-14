@@ -10,7 +10,6 @@ from ansible.config.manager import ensure_type
 class ActionModule(ActionBase):
 
     def run(self, tmp=None, task_vars=None):
-
         if task_vars is None:
             task_vars = dict()
 
