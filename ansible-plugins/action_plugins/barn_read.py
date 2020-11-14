@@ -40,7 +40,6 @@ class ActionModule(ActionBase):
                 'type': "host"
             }
 
-            # query_args = dict(data=json.dumps(data).encode('utf-8'))
             query_args = dict()
             query_args["data"] = json.dumps(data).encode('utf-8')
             query_args["headers"] = {'Content-type': 'application/json'}
