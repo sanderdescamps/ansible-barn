@@ -68,7 +68,10 @@ class InventoryModule(BaseInventoryPlugin):
         '''Checks if the barn config file is a valid config file.
         '''
         valid = False
-        if super(InventoryModule, self).verify_file(path) and self._validate_connection_file(path):
+        if path.lower().endswith("@barn"):
+            self.display.vv("Using Barn as inventory source")
+            valid = True
+        elif super(InventoryModule, self).verify_file(path) and self._validate_connection_file(path):
             self.display.vv("Using Barn as inventory source")
             valid = True
         else: 
