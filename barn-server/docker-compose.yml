@@ -37,7 +37,7 @@ services:
             - ./nginx/reverse_proxy.conf:/etc/nginx/conf.d/default.conf:ro
             - ./nginx/static/:/usr/share/nginx/html/static:ro
             - ./nginx/cert/barn-self-signed.key:/etc/nginx/cert/barn.key:ro
-            - ./nginx/cert/barn-self-signed.be.crt:/etc/nginx/cert/barn.crt:ro
+            - ./nginx/cert/barn-self-signed.crt:/etc/nginx/cert/barn.crt:ro
         ports:
             - 80:80
             - 443:443
