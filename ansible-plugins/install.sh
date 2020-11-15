@@ -1,6 +1,6 @@
 mkdir -p ~/.ansible/plugins/inventory
 mkdir -p ~/.ansible/plugins/modules
-mkdir -p ~/.ansible/plugins/action_plugins
+mkdir -p ~/.ansible/plugins/action
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
