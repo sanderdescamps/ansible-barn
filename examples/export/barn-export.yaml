@@ -1,0 +1,49 @@
+nodes:
+- child_groups: []
+  hosts:
+  - srvdns02.myhomecloud.be
+  - srvdns01.myhomecloud.be
+  name: dns_servers
+  type: group
+  vars: {}
+- child_groups:
+  - dns_servers
+  hosts:
+  - srvplex01.myhomecloud.be
+  name: all_servers
+  type: group
+- name: media_servers
+  type: group
+- name: srvplex01.myhomecloud.be
+  type: host
+  vars: {}
+- name: srvdns01.myhomecloud.be
+  type: host
+  vars:
+    env_environment: production
+    update_frequency: 1d
+    update_group: 1
+    tags:
+    - tag1
+    - tag3
+    test: sdqf
+- name: srvdns02.myhomecloud.be
+  type: host
+  vars:
+    env_environment: production
+    update_frequency: 1d
+    update_group: 2
+    tags:
+    - tag2
+    - tag3
+    test: sdqf
+hosts:
+  - name: srvkub01.myhomecloud.be
+  - name: srvkub02.myhomecloud.be
+  - name: srvkub03.myhomecloud.be
+groups:
+  - name: kubernetes_cluster
+    hosts:
+    - srvkub01.myhomecloud.be
+    - srvkub02.myhomecloud.be
+    - srvkub03.myhomecloud.be
