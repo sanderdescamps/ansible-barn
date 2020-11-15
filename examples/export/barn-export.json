@@ -1,0 +1,73 @@
+{
+  "nodes": [
+    {
+      "name": "dns_servers",
+      "type": "group",
+      "vars": {},
+      "hosts": [
+        "srvdns02.myhomecloud.be",
+        "srvdns01.myhomecloud.be",
+        "newdnsserver.myhomecloud.be"
+      ],
+      "child_groups": []
+    },
+    {
+      "name": "all_servers",
+      "type": "group",
+      "vars": {},
+      "hosts": [
+        "srvplex01.myhomecloud.be"
+      ],
+      "child_groups": [
+        "dns_servers"
+      ]
+    },
+    {
+      "name": "new_servers",
+      "type": "group",
+      "vars": {},
+      "hosts": [
+        "srvdns01.myhomecloud.be"
+      ],
+      "child_groups": []
+    },
+    {
+      "name": "new_servers2",
+      "type": "group",
+      "vars": {},
+      "hosts": [
+        "srvdns01.myhomecloud.be"
+      ],
+      "child_groups": []
+    },
+    {
+      "name": "srvplex01.myhomecloud.be",
+      "type": "host",
+      "vars": {}
+    },
+    {
+      "name": "srvdns01.myhomecloud.be",
+      "type": "host",
+      "vars": {
+        "deploytime": "today",
+        "env_environment": "development",
+        "tags": [
+          "tag1",
+          "tag3"
+        ],
+        "creationdate": "vandaag",
+        "test": "sdqf"
+      }
+    },
+    {
+      "name": "srvdns02.myhomecloud.be",
+      "type": "host",
+      "vars": {}
+    },
+    {
+      "name": "newdnsserver.myhomecloud.be",
+      "type": "host",
+      "vars": {}
+    }
+  ]
+}

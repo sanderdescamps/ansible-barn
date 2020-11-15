@@ -1,0 +1,36 @@
+groups:
+- name: dns_servers
+  child_groups: []
+  hosts: []
+  vars: {}
+- name: all_servers
+  child_groups:
+  - dns_servers
+  - kubernetes_cluster
+  hosts: []
+  vars: {}
+- name: kubernetes_cluster
+  child_groups: []
+  hosts:
+  - srvkub01.myhomecloud.be
+  - srvkub02.myhomecloud.be
+  - srvkub03.myhomecloud.be
+  vars: {}
+hosts:
+- name: srvdns01.myhomecloud.be
+  vars:
+    creationdate: vandaag
+    deploytime: today
+    env_environment: development
+    tags:
+    - tag1
+    - tag3
+    test: testvariable
+- name: srvdns02.myhomecloud.be
+  vars: {}
+- name: srvkub01.myhomecloud.be
+  vars: {}
+- name: srvkub02.myhomecloud.be
+  vars: {}
+- name: srvkub03.myhomecloud.be
+  vars: {}
