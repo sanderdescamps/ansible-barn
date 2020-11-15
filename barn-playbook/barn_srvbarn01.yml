@@ -1,0 +1,7 @@
+---
+plugin: barn
+barn_user: admin
+barn_password: admin
+barn_hostname: srvbarn01
+barn_port: 5000
+fetch_variables: false
