@@ -13,7 +13,7 @@ DOCUMENTATION = r'''
 ---
 module: barn_write
 version_added: 2.9.9
-short_description: Make changes in barn
+short_description: Make changes in Barn
 options:
   barn_host:
     description:
@@ -58,8 +58,8 @@ EXAMPLES = r'''
 - name: Add host to Barn
   barn_write:
     barn_host: "127.0.0.1"
-    barn_user: "sdescamps"
-    barn_password: "supersecurepassword"
+    barn_user: "admin"
+    barn_password: "admin"
     barn_port: 5000
     state: present
     vars: 
@@ -73,8 +73,8 @@ EXAMPLES = r'''
 - name: Remove old_variable from host variables inside Barn
   barn_write:
     barn_host: "127.0.0.1"
-    barn_user: "sdescamps"
-    barn_password: "supersecurepassword"
+    barn_user: "admin"
+    barn_password: "admin"
     barn_port: 5000
     remove_vars: 
       - old_variable
@@ -82,8 +82,8 @@ EXAMPLES = r'''
 - name: Remove host from Barn
   barn_write:
     barn_host: "127.0.0.1"
-    barn_user: "sdescamps"
-    barn_password: "supersecurepassword"
+    barn_user: "admin"
+    barn_password: "admin"
     barn_port: 5000
     state: absent
 '''
