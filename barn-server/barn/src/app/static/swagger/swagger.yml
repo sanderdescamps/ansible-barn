@@ -38,6 +38,64 @@ paths:
             application/json:
                   schema:
                     type: object
+  /upload:
+    get:
+      summary: Upload web page 
+      responses:
+        "200":
+          description: OK
+          content: 
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Send file and import it in Barn
+      requestBody:
+        required: True
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content: 
+            application/json:
+                  schema:
+                    type: object
+  /export:
+    get:
+      summary: Export current hosts and groups
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+            - yaml
+            - yml
+            - json
+        required: false
+        example: json
+        description: output format of the export
+      - in: query
+        name: file
+        schema:
+          type: boolean
+        required: false
+        example: false
+        description: if True, in a browser you will imidiatly download the file
+      responses:
+        "200":
+          description: OK
+          content: 
+            application/json:
+                  schema:
+                    type: object
   /nodes:
     $ref: "./nodes.yml"
   /hosts:
