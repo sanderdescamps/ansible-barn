@@ -98,6 +98,34 @@ Usually you put the fqdn in the inventory file and a DNS server provides an IP a
             - "vim"
             - "tcpdump"
 
+## Upload data
+
+Browse to [http://127.0.0.1:5000/upload](http://127.0.0.1:5000/upload)
+
+    #Upload a file
+    groups:
+    - name: dns_servers
+      child_groups: []
+      hosts: []
+      vars: {}
+    - name: all_servers
+      child_groups:
+      - dns_servers
+      hosts: []
+      vars: {}
+    hosts:
+    - name: srvdns01.myhomecloud.be
+      vars:
+        creationdate: vandaag
+        deploytime: today
+        env_environment: development
+        tags:
+        - tag1
+        - tag3
+        test: testvariable
+    - name: srvdns02.myhomecloud.be
+      vars: {}
+
 ## API documentation
 
     https://127.0.0.1:5000/swagger/
