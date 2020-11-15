@@ -4,4 +4,4 @@ python_libs/barnapi/app/__pycache__/
 *.pyc
 python-env/*
 barn-server/mongodb/mongo-volume/*
-barn-server/nginx/cert/
+barn-server/nginx/cert/barn.myhomecloud.be*
