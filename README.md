@@ -1,64 +1,122 @@
-# ansible-barn
-Ansible-barn or barn in short is a central variable server for Ansible. It provides a central location to store variables. Via Ansible modules you can easily get and set variables. Via an API ansible will store the variables in a MongoDB database. At the moment Ansible-barn is still under construction. 
+# Ansible-barn
+Ansible-barn or Barn in short is a central variable server for Ansible. Barn was designed to provide an single location for all variables. Variables can be updated via ansible-task, api, file import and in the future also via cli. 
 
-# API
+## Installation
 
-## Methodes
+### Client (Ansible)
 
-### GET hosts/groups/nodes
-**description:** Get one or all hosts or groups
+Install Barn plugins as user (no sudo!!)
 
-**properties:**
-- *type*: type of the node {host, group}. Only usefull when querying nodes. 
-- *name*: Name of the host of Group
+**!!Barn has not been tested on Ansible 2.10!!**
 
-**return:**
+    bash ./ansible-plugins/install.sh
 
-    {
-      "results": [
-        {
-          "_cls": "Node.Host",
-          "_id": {
-            "$oid": "5eff0236c8eeb1ae91a5cbc8"
-          },
-          "groups": [],
-          "name": "srvdns01.myhomecloud.be",
-          "vars": {}
-        }
-      ]
-    }
-    
-### POST /nodes/
-**description:** Add new host or group
+### Barn-server
 
-**properties:**
-- **name**: name of the host/group
-- **type**: type of the node {host, group}
-- **groups**: groups a host belongs to (when type==host)
-- **child_groups**: child groups of a group (comma seperated list)
-- **parent_groups**: parent groups a group belongs to (comma seperated list)
+Clone the repo
 
+Start the barn server with docker compose
 
+    docker-compose up -d
 
-##Result
+## Inventory
 
-    {
-        "error": "this is the error message"
-        "warning": "this is the warning message. With a warning there is still a result"
-        "info": "This is the info message"
-        "status"; "Status code of the http request"
-    }
+### Using Barn inventory
 
+With config file
 
-# Inventory
-## Generate Ansible inventory file
+    ansible all -i barn.yaml -m setup
+
+With default config (see bellow)
+
+    ansible all -i @barn -m setup
+
+### Using @barn as inventory
+
+#### Default connection file
+
+The inventory plugin will search for the connection info in following files. 
+
+* /etc/barn/barn.yml (/etc/barn/barn.yaml)
+* ~/.barn.yml (~/.barn.yaml)
+
+**Example barn.yml**
+
+    plugin: barn
+    barn_user: sdescamps
+    barn_password: testpassword
+    barn_hostname: 127.0.0.1
+    barn_port: 5000
+    fetch_variables: false
+
+#### Default connection file
+
+add `barn` in the [inventory-enabled](https://docs.ansible.com/ansible/latest/reference_appendices/config.html#inventory-enabled) list in the file 
+
+    [inventory]
+    enable_plugins = barn, host_list, script, auto, yaml, ini, toml
+
+### Generate Ansible inventory file
 
 Write the full inventory to a json-file. The json-file can directly be read by Ansible. No authentication required. 
 
     curl -s http://127.0.0.1:5000/inventory_file > test_inventory.json
 
+### Ansible without DNS server with Barn
 
-## Install barn inventory 
+Usually you put the fqdn in the inventory file and a DNS server provides an IP address which Ansible uses to connect to the server. But there are cases where you can't rely on DNS. Therefore in Ansible you can define the `ansible_host` variable with the IP address in the inventory file. This is also possible with Barn. The variables stored in Barn will be injected in the root of the Ansible facts of the host (if `fetch_variables=True`). If you define `ansible_host` as a variable in Barn, Ansible will use that IP to connect to the host. 
 
-    mkdir -p ~/.ansible/plugins/inventory/
-    ln -s ~/git/ansible-barn/barn-playbook/inventory_plugins/barn.py ~/.ansible/plugins/inventory/barn.py
+## Ansible tasks
+
+### barn_read
+
+    - name: Read info from Barn
+      barn_read:
+        barn_host: "127.0.0.1"
+        barn_user: "admin"
+        barn_password: "admin"
+        barn_port: 5000
+        exclude: test
+        load_to_facts: False
+      register: output_barn_read
+
+### barn_write
+
+    - name: Add host to Barn
+      barn_write:
+        barn_host: "127.0.0.1"
+        barn_user: "admin"
+        barn_password: "admin"
+        barn_port: 5000
+        state: present
+        vars: 
+          custom_variable: with_custom_value
+          host_ip: 10.6.51.32
+          environment: development
+          installed_packages:
+            - "nano"
+            - "vim"
+            - "tcpdump"
+
+## API documentation
+
+    https://127.0.0.1:5000/swagger/
+
+
+## Roadmap
+
+Barn is still under development. Version 1.0 is the first version which is publicly released. Version 1.0 should not be considered stable nor production ready. In the future new features will be added and issues will be fixed. Bellow a list of some of the features which will be added in the future. 
+
+* Test Barn on Ansible 2.10 (Barn v1.1)
+* Extend base features 
+* BarnCLI
+* Review token authentication and permissions assignment
+* Variable encryption
+* Improve documentation
+* ...
+
+
+## A word from the author
+
+I'm a Linux system engineer and work as a consultant at Axxes. I started Barn as a personal weekend project. I'm not a great programmer but I know how to write code. For me, this project is a wonderful learning experiance. If you have any ideas, suggestions or feedback please reach out to me and let me know. I'm curious about what other people think about this project. 
+
