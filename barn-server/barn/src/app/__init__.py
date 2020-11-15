@@ -16,14 +16,14 @@ from flask_swagger_ui import get_swaggerui_blueprint
 
 app = Flask(__name__)
 
-@app.route('/favicon.ico')
-def favicon():
-    return redirect(url_for('static', filename='favicon.ico'))
+# @app.route('/favicon.ico')
+# def favicon():
+#     return redirect(url_for('static', filename='favicon.ico'))
 
 
 #Swagger
 SWAGGER_URL = '/swagger'
-API_URL = '/static/swagger.yml'
+API_URL = '/static/swagger/swagger.yml'
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
