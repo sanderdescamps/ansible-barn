@@ -1,0 +1,26 @@
+get:
+  summary: Get list of nodes
+  security:
+    - basicAuth: []
+  parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        required: false
+        description: search on name of node
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum: 
+            - "host"
+            - "group"
+        required: false
+        description: Type of the node. (ex. host, group,..)
+
+  responses:
+    "200":
+      $ref: './swagger.yml#/components/responses/DefaultResponse'
+    '401':
+      $ref: './swagger.yml#/components/responses/UnauthorizedError'

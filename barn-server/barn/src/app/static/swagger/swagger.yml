@@ -1,0 +1,187 @@
+openapi: 3.0.0
+info:
+  title: Barn
+  description: Dynamic inventory for Ansible
+  version: 1.0.0
+servers:
+  - url: /
+paths:
+  /login:
+    post:
+      summary: Login into Barn
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Successfull login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Authentication token
+  /register:
+    get:
+      summary: Register new user
+      responses:
+        "200":
+          description: OK
+  /inventory_file:
+    get:
+      summary: Return the inventory file
+      responses:
+        "200":
+          description: OK
+          content: 
+            application/json:
+                  schema:
+                    type: object
+  /upload:
+    get:
+      summary: Upload web page 
+      responses:
+        "200":
+          description: OK
+          content: 
+            text/html:
+              schema:
+                type: string
+    post:
+      summary: Send file and import it in Barn
+      requestBody:
+        required: True
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: OK
+          content: 
+            application/json:
+                  schema:
+                    type: object
+  /export:
+    get:
+      summary: Export current hosts and groups
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+            - yaml
+            - yml
+            - json
+        required: false
+        example: json
+        description: output format of the export
+      - in: query
+        name: file
+        schema:
+          type: boolean
+        required: false
+        example: false
+        description: if True, in a browser you will imidiatly download the file
+      responses:
+        "200":
+          description: OK
+          content: 
+            application/json:
+                  schema:
+                    type: object
+  /nodes:
+    $ref: "./nodes.yml"
+  /hosts:
+    $ref: "./hosts.yml"
+  /groups:
+    $ref: "./groups.yml"
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  responses:
+    DefaultResponse:
+      description: Default response with results
+      content: 
+        application/json:
+              schema:
+                type: object
+                properties:
+                  changed:
+                    type: boolean
+                    default: false
+                    description: True when a change has been made inside Barn
+                  failed:
+                    type: boolean
+                    default: false
+                    description: True when error occured
+                  msg:
+                    type: string
+                    default: ""
+                    description: Output message in case of an error
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Node'
+                    description: List of results
+    UnauthorizedError:
+      description: Unautorized request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              failed:
+                type: boolean
+                default: true
+                description: True when error happens
+              msg:
+                type: string
+                description: Error message if something went wrong
+
+
+  schemas:
+    Node:
+      oneOf:
+        - $ref: '#/components/schemas/Host'
+        - $ref: '#/components/schemas/Group'
+    Host:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: 
+            - "host"
+        vars:
+          type: object
+    Group:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: 
+            - "group"
+        vars:
+          type: object
+        child_groups:
+          type: array
+          description: List of groupnames
+          items: 
+            type: string
+        hosts:
+          type: array
+          description: List of hostnames
+          items: 
+            type: string

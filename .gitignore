@@ -5,3 +5,4 @@ python_libs/barnapi/app/__pycache__/
 python-env/*
 barn-server/mongodb/mongo-volume/*
 barn-server/nginx/cert/barn.myhomecloud.be*
+.vscode/
