@@ -17,6 +17,7 @@ Clone the repo
 
 Start the barn server with docker compose
 
+    cd ./barn-server/
     docker-compose up -d
 
 ## Inventory
