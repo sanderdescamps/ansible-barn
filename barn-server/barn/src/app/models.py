@@ -172,7 +172,7 @@ class Group(Node):
             self.child_groups.append(child_group)
         elif isinstance(child_group, str):
             o_child_group = Group.objects(name=child_group).first()
-            if o_child_group: 
+            if o_child_group and o_child_group not in self.child_groups: 
                 self.child_groups.append(o_child_group)
         else:
             raise TypeError
@@ -181,31 +181,25 @@ class Group(Node):
         for child_group in child_groups:
             self._add_child_group(child_group)
 
-    def _set_host(self, host):
-        if isinstance(host, Host):
-            self.hosts.append(host)
-        elif isinstance(host, str):
-            o_host = Host.objects(name=host).first()
-            if o_host:
-                self.hosts.append(o_host)
-        else:
-            raise TypeError
-
     def set_hosts(self, hosts):
-        for host in hosts:
-            self._set_host(host)
+        """Set list of hosts"""
+        self.hosts = []
+        self.add_hosts(hosts)
 
     def _add_host(self, host):
         if isinstance(host, Host) and host not in self.hosts:
             self.hosts.append(host)
         elif isinstance(host, str):
             o_host = Host.objects(name=host).first()
-            if o_host and host not in self.hosts:
-                self.hosts.append(host)
+            if o_host and o_host not in self.hosts:
+                self.hosts.append(o_host)
         else:
             raise TypeError
 
     def add_hosts(self, hosts):
+        """Add list of hosts to the current hosts"""
+        if type(hosts) is Host:
+            hosts = [hosts]
         for host in hosts:
             self._add_host(host)
 
@@ -215,14 +209,14 @@ class Group(Node):
             o_group = Group.objects(name=json_data.get("name")).first()
             if not o_group:
                 o_group = Group(name=json_data.get("name"))
-                if append:
-                    o_group.update_vars(json_data.get("vars",{}))
-                    o_group.add_child_groups(json_data.get("child_groups",[]))
-                    o_group.add_hosts(json_data.get("hosts",[]))
-                else:
-                    o_group.set_vars(json_data.get("vars",{}))
-                    o_group.set_child_groups(json_data.get("child_groups",[]))
-                    o_group.set_hosts(json_data.get("hosts",[]))
+            if append:
+                o_group.update_vars(json_data.get("vars",{}))
+                o_group.add_child_groups(json_data.get("child_groups",[]))
+                o_group.add_hosts(json_data.get("hosts",[]))
+            else:
+                o_group.set_vars(json_data.get("vars",{}))
+                o_group.set_child_groups(json_data.get("child_groups",[]))
+                o_group.set_hosts(json_data.get("hosts",[]))
             return o_group
         else:
             raise ValueError

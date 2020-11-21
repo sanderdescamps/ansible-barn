@@ -23,7 +23,7 @@ def post_upload_file(current_user=None):
 
         to_add = None
         if fileextention.lower() in ("yaml", "yml"):
-            to_add = yaml.load(file,Loader=yaml.FullLoader)
+            to_add = yaml.load(file, Loader=yaml.FullLoader)
         elif fileextention.lower() == "json":
             to_add = json.load(file)
         else:
@@ -51,6 +51,7 @@ def post_upload_file(current_user=None):
 
         for group in to_add.get("groups", []):
             o_group = Group.from_json(group)
+            print(o_group.to_json())
             o_group.save()
 
         return jsonify(to_add)
