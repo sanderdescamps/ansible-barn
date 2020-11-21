@@ -183,11 +183,11 @@ class Group(Node):
 
     def _set_host(self, host):
         if isinstance(host, Host):
-            self.hosts = [host]
+            self.hosts.append(host)
         elif isinstance(host, str):
             o_host = Host.objects(name=host).first()
             if o_host:
-                self.hosts = [o_host]
+                self.hosts.append(o_host)
         else:
             raise TypeError
 
