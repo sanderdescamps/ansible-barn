@@ -32,9 +32,22 @@ def post_upload_file(current_user=None):
         else:
             return jsonify(dict(msg="unsuported extention"), status=HTTPStatus.BAD_REQUEST)
 
+        # Create nodes first
+        hosts_to_add = to_add.get("hosts",[])
+        groups_to_add = to_add.get("groups",[])
         for node in to_add.get("nodes",[]):
-            o_node = Node.from_json(node)
-            o_node.save()
+            if node.get("type","").lower() == "host":
+                hosts_to_add.append(node)
+            elif node.get("type","").lower() == "group":
+                groups_to_add.append(node)
+
+        for host in hosts_to_add:
+            if host.get("name") and not Host.objects(name=host.get("name")):
+                Host(name=host.get("name")).save()
+
+        for group in groups_to_add:
+            if group.get("name") and not Group.objects(name=group.get("name")):
+                Group(name=group.get("name")).save()
 
         for host in to_add.get("hosts",[]):
             o_host = Host.from_json(host)
