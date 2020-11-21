@@ -23,7 +23,7 @@ def post_upload_file(current_user=None):
 
         to_add = None
         if fileextention.lower() in ("yaml", "yml"):
-            to_add = yaml.load(file)
+            to_add = yaml.load(file,Loader=yaml.FullLoader)
         elif fileextention.lower() == "json":
             to_add = json.load(file)
         else:
