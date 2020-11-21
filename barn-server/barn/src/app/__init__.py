@@ -2,6 +2,7 @@ import sys
 import os
 from flask import Flask, url_for, redirect
 from flask_mongoengine import MongoEngine
+from flask_swagger_ui import get_swaggerui_blueprint
 from app.config import ConfigLoader
 from app.pages.users import user_pages
 from app.pages.hosts import host_pages
@@ -12,7 +13,7 @@ from app.pages.debug import debug_pages
 from app.pages.export import export_pages
 from app.pages.upload import upload_pages
 from app.models import User
-from flask_swagger_ui import get_swaggerui_blueprint
+
 
 app = Flask(__name__)
 
