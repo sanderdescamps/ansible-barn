@@ -140,5 +140,8 @@ class InventoryModule(BaseInventoryPlugin):
                     inventory.set_variable(g.get("name"), k, v)
             for h in g.get("hosts", []):
                 inventory.add_child(g.get("name"), h)
+        # Add child groups
+        for g in groups:
             for cg in g.get("child_groups", []):
-                inventory.add_child(g.get("name"), cg)
+                if cg in inventory.groups:
+                    inventory.add_child(g.get("name"), cg)
