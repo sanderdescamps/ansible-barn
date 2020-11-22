@@ -4,25 +4,22 @@ from flask import Flask, url_for, redirect
 from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.config import ConfigLoader
-from app.pages.users import user_pages
+from app.pages.admin.users import user_pages
+from app.pages.admin.export import export_pages
 from app.pages.inventory.hosts import host_pages
 from app.pages.inventory.groups import group_pages
 from app.pages.inventory.nodes import node_pages
 from app.pages.inventory_export import inventory_pages
 from app.pages.debug import debug_pages
-from app.pages.export import export_pages
 from app.pages.upload import upload_pages
+from app.pages.login import login_pages
 from app.models import User
 
 
 app = Flask(__name__)
 
-# @app.route('/favicon.ico')
-# def favicon():
-#     return redirect(url_for('static', filename='favicon.ico'))
 
-
-#Swagger
+# Swagger
 SWAGGER_URL = '/swagger'
 API_URL = '/static/swagger/swagger.yml'
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
@@ -67,10 +64,10 @@ if config.get_barn_config().get("debug_mode", False):
 
 db = MongoEngine(app)
 
-if not User.objects(name=config.get_barn_config().get("barn_init_admin_user","admin")).first():
+if not User.objects(name=config.get_barn_config().get("barn_init_admin_user", "admin")).first():
     User(
-        name=config.get_barn_config().get("barn_init_admin_user","admin"),
-        username=config.get_barn_config().get("barn_init_admin_user","admin"),
-        password=config.get_barn_config().get("barn_init_admin_password","admin"),
+        name=config.get_barn_config().get("barn_init_admin_user", "admin"),
+        username=config.get_barn_config().get("barn_init_admin_user", "admin"),
+        password=config.get_barn_config().get("barn_init_admin_password", "admin"),
         admin=True
-        ).save()
+    ).save()
