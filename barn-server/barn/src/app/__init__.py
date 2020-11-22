@@ -3,7 +3,6 @@ import os
 from flask import Flask, url_for, redirect
 from flask_mongoengine import MongoEngine
 from flask_swagger_ui import get_swaggerui_blueprint
-from app.config import ConfigLoader
 from app.pages.admin.users import user_pages
 from app.pages.admin.export import export_pages
 from app.pages.inventory.hosts import host_pages
@@ -14,6 +13,7 @@ from app.pages.debug import debug_pages
 from app.pages.upload import upload_pages
 from app.pages.login import login_pages
 from app.models import User
+from app.utils.config import ConfigLoader
 
 
 app = Flask(__name__)
@@ -45,11 +45,10 @@ else:
     print("Can't load config file")
     sys.exit("Couldn't find config file")
 
-config = ConfigLoader(CFG_PATH)
-app.config['BARN_CONFIG'] = config
-app.config['TOKEN_ENCRYPTION_KEY'] = config.get_barn_config().get(
-    "barn_token_encryption_key")
-app.config['MONGODB_SETTINGS'] = config.get_mongo_settings()
+
+config = ConfigLoader(CFG_PATH).get_config()
+app.config.from_mapping(config)
+
 
 app.register_blueprint(host_pages)
 app.register_blueprint(user_pages)
@@ -59,15 +58,15 @@ app.register_blueprint(inventory_pages)
 app.register_blueprint(export_pages)
 app.register_blueprint(upload_pages)
 app.register_blueprint(login_pages)
-if config.get_barn_config().get("debug_mode", False):
+if config.get("BARN_CONFIG",{}).get("debug_mode", False):
     app.register_blueprint(debug_pages)
 
 db = MongoEngine(app)
 
-if not User.objects(name=config.get_barn_config().get("barn_init_admin_user", "admin")).first():
+if not User.objects(name=config.get("BARN_CONFIG",{}).get("barn_init_admin_user", "admin")).first():
     User(
-        name=config.get_barn_config().get("barn_init_admin_user", "admin"),
-        username=config.get_barn_config().get("barn_init_admin_user", "admin"),
-        password=config.get_barn_config().get("barn_init_admin_password", "admin"),
+        name=config.get("BARN_CONFIG",{}).get("barn_init_admin_user", "admin"),
+        username=config.get("BARN_CONFIG",{}).get("barn_init_admin_user", "admin"),
+        password=config.get("BARN_CONFIG",{}).get("barn_init_admin_password", "admin"),
         admin=True
     ).save()

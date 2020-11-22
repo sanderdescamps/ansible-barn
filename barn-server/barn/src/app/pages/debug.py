@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, current_app
 from app.models import Group, Role, Host, User
 from app.auth import authenticate
-from app.config import ConfigLoader
+
 
 debug_pages = Blueprint('debug', __name__)
 
@@ -16,7 +16,7 @@ def init(current_user=None):
     Role(name="readOnly", description="Read access on inventory").save()
     Role(name="query", description="Read access on inventory").save()
 
-    User.objects(name__not__iexact=current_app.config.get('BARN_CONFIG').get_barn_config().get("barn_init_admin_user")).delete()
+    User.objects(name__not__iexact=current_app.config.get('BARN_CONFIG').get("barn_init_admin_user")).delete()
     user_1 = User(name="Sander Descamps", username="sdescamps",
                   password="testpassword", roles=["admin"])
     user_1.save()
