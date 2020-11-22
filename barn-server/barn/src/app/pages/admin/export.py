@@ -9,7 +9,7 @@ from app.auth import authenticate
 export_pages = Blueprint('export', __name__)
 
 
-@export_pages.route('/export', methods=['GET'])
+@export_pages.route('/api/v1/admin/export', methods=['GET'])
 @authenticate("guest")
 def get_export(current_user=None):
     export_data = dict(hosts=[], groups=[])

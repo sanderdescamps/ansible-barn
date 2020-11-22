@@ -11,7 +11,7 @@ from app.utils.formater import ResponseFormater
 user_pages = Blueprint('user', __name__)
 
 @authenticate("createUser")
-@user_pages.route('/register', methods=['GET', 'POST'])
+@user_pages.route('/api/v1/admin/register', methods=['GET', 'POST'])
 def signup_user():
     resp = ResponseFormater()
     data = request.get_json()
@@ -26,28 +26,10 @@ def signup_user():
 
     return resp.succeed(msg='registered successfully').get_response()
 
-@authenticate("guest")
-@user_pages.route('/login', methods=['GET', 'POST'])
-def login_user():
-    resp = ResponseFormater()
-    auth = request.authorization
-
-    if not auth or not auth.username or not auth.password:
-        return resp.authentication_error(msg='could not verify').get_response()
-
-    user = User.objects(username=auth.username).first()
-    if user is None:
-        return resp.authentication_error(msg='Could not login').get_response()
-    if check_password_hash(user.password_hash, auth.password):
-        token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
-        ) + datetime.timedelta(minutes=30)}, current_app.config['TOKEN_ENCRYPTION_KEY'])
-        return jsonify({'token': token.decode('UTF-8')})
-
-    return resp.authentication_error('Could not verify')
 
 @authenticate("manageUsers")
-@user_pages.route('/users', methods=['GET'])
-def get_all_users():
+@user_pages.route('/api/v1/admin/users', methods=['GET'])
+def get_users():
     resp = ResponseFormater()
     users = User.objects()
     resp.add_result(users.exclude("id"))

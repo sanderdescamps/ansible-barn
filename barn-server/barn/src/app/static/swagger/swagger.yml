@@ -22,7 +22,13 @@ paths:
                   token:
                     type: string
                     description: Authentication token
-  /register:
+  /api/v1/admin/register:
+    get:
+      summary: Register new user
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/users:
     get:
       summary: Register new user
       responses:
@@ -67,7 +73,7 @@ paths:
             application/json:
                   schema:
                     type: object
-  /export:
+  /api/v1/admin/export:
     get:
       summary: Export current hosts and groups
       parameters:
