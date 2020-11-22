@@ -34,18 +34,18 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
 )
 app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
 
-cfg_path = None
+CFG_PATH = None
 if len(sys.argv) > 1:
-    cfg_path = sys.argv[1]
+    CFG_PATH = sys.argv[1]
 elif os.path.exists(os.path.join(os.getcwd(), "config/barn-server.cfg")):
-    cfg_path = os.path.join(os.getcwd(), "config/barn-server.cfg")
+    CFG_PATH = os.path.join(os.getcwd(), "config/barn-server.cfg")
 elif os.path.exists("/etc/barn/barn-server.cfg"):
-    cfg_path = "/etc/barn/barn-server.cfg"
+    CFG_PATH = "/etc/barn/barn-server.cfg"
 else:
     print("Can't load config file")
     sys.exit("Couldn't find config file")
 
-config = ConfigLoader(cfg_path)
+config = ConfigLoader(CFG_PATH)
 app.config['BARN_CONFIG'] = config
 app.config['TOKEN_ENCRYPTION_KEY'] = config.get_barn_config().get(
     "barn_token_encryption_key")
