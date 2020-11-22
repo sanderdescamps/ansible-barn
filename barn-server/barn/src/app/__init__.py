@@ -29,7 +29,10 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
     SWAGGER_URL,
     API_URL,
     config={
-        'app_name': "Ansible Barn"
+        'app_name': "Ansible Barn",
+        'apisSorter': "alpha",
+        'operationsSorter': "alpha",
+        'layout': "BaseLayout"
     }
 )
 app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
