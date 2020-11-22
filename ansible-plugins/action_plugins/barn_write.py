@@ -65,7 +65,7 @@ class ActionModule(ActionBase):
                     query_args["url_password"] = barn_password
                     query_args["force_basic_auth"] = True
 
-                resp = Request().open("PUT", "http://%s:%s/hosts" %
+                resp = Request().open("PUT", "http://%s:%s/api/v1/inventory/hosts" %
                                       (barn_host, barn_port), **query_args)
                 result = json.loads(resp.read())
 

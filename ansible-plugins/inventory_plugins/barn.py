@@ -109,14 +109,14 @@ class InventoryModule(BaseInventoryPlugin):
         hosts = []
         groups = []
         try:
-            self.display.vvv("Connect to http://%s:%s/hosts" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
-            r = Request().open("GET", "http://%s:%s/hosts" % (
+            self.display.vvv("Connect to http://%s:%s/api/v1/inventory/hosts" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
+            r = Request().open("GET", "http://%s:%s/api/v1/inventory/hosts" % (
                 self.barn_vars.get("barn_hostname"),
                 self.barn_vars.get("barn_port")), **query_args)
             hosts = json.loads(r.read()).get("result")
             self.display.vvv(json.dumps(hosts))
-            self.display.vvv("Connect to http://%s:%s/groups" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
-            r = Request().open("GET", "http://%s:%s/groups" % (
+            self.display.vvv("Connect to http://%s:%s/api/v1/inventory/groups" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
+            r = Request().open("GET", "http://%s:%s/api/v1/inventory/groups" % (
                 self.barn_vars.get("barn_hostname"),
                 self.barn_vars.get("barn_port")), **query_args)
             groups = json.loads(r.read()).get("result")
