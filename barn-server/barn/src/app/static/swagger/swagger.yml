@@ -34,9 +34,11 @@ paths:
       responses:
         "200":
           description: OK
-  /inventory_file:
+  /api/v1/ansible_inventory:
     get:
-      summary: Return the inventory file
+      summary: Return an json Ansible inventory file
+      description: |
+        Alias: https://<hostname>:<port>/ansible_inventory or https://<hostname>:<port>/inventory_file
       responses:
         "200":
           description: OK

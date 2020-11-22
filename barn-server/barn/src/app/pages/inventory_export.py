@@ -5,7 +5,7 @@ from app.auth import authenticate
 inventory_pages = Blueprint('inventory', __name__)
 
 
-@inventory_pages.route('/inventory_file', methods=['GET'])
+@inventory_pages.route('/api/v1/ansible_inventory', methods=['GET'])
 @authenticate("guest")
 def get_ansible_inventory_file(current_user=None):
     o_hosts = Host.objects()
