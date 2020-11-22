@@ -1,5 +1,7 @@
 get:
   summary: Get list of groups
+  tags:
+    - inventory
   security:
     - basicAuth: []
   parameters:
@@ -22,6 +24,8 @@ get:
       $ref: './swagger.yml#/components/responses/UnauthorizedError'
 post:
   summary: Search for groups
+  tags:
+    - inventory
   security:
     - basicAuth: []
   parameters:
@@ -62,6 +66,8 @@ post:
       $ref: './swagger.yml#/components/responses/UnauthorizedError'
 put:
   summary: Add/Update group
+  tags:
+    - inventory
   security:
     - basicAuth: []
   requestBody:

@@ -1,5 +1,7 @@
 get:
   summary: Get list of nodes
+  tags:
+    - inventory
   security:
     - basicAuth: []
   parameters:
