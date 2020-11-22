@@ -96,11 +96,11 @@ paths:
             application/json:
                   schema:
                     type: object
-  /nodes:
+  /api/v1/inventory/nodes:
     $ref: "./nodes.yml"
-  /hosts:
+  /api/v1/inventory/hosts:
     $ref: "./hosts.yml"
-  /groups:
+  /api/v1/inventory/groups:
     $ref: "./groups.yml"
 components:
   securitySchemes:
