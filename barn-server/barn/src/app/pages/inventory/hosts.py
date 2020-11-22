@@ -11,7 +11,7 @@ from app.auth import authenticate
 host_pages = Blueprint('host', __name__)
 
 
-@host_pages.route('/hosts', methods=['GET'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['GET'])
 @authenticate('getHost')
 def get_hosts(current_user=None, resp=None):
     if resp is None:
@@ -24,7 +24,7 @@ def get_hosts(current_user=None, resp=None):
     resp.add_result(Host.objects(**query_args))
     return resp.get_response()
 
-@host_pages.route('/hosts', methods=['POST'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['POST'])
 @authenticate('getHost')
 def post_hosts(current_user=None):
     resp = ResponseFormater()
@@ -36,7 +36,7 @@ def post_hosts(current_user=None):
     resp.add_result(Host.objects(**query_args))
     return resp.get_response()
 
-@host_pages.route('/hosts', methods=['PUT'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['PUT'])
 @authenticate('addHost')
 def put_hosts(current_user=None, resp=None):
     if resp is None:
@@ -131,7 +131,7 @@ def put_hosts(current_user=None, resp=None):
     return resp.get_response()
 
 
-@host_pages.route('/hosts', methods=['DELETE'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['DELETE'])
 @authenticate('deleteHost')
 def delete_hosts(current_user=None):
     resp = ResponseFormater()

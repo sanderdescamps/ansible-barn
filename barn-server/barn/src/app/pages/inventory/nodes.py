@@ -2,14 +2,14 @@ from flask import request, Blueprint
 from app.models import Node
 from app.utils import merge_args_data, list_parser
 from app.auth import authenticate
-from app.pages.hosts import put_hosts
-from app.pages.groups import put_groups
+from app.pages.inventory.hosts import put_hosts
+from app.pages.inventory.groups import put_groups
 from app.utils.formater import ResponseFormater
 
 node_pages = Blueprint('nodes', __name__)
 
 
-@node_pages.route('/nodes', methods=['GET'])
+@node_pages.route('/api/v1/inventory/nodes', methods=['GET'])
 @authenticate('getNode')
 def get_nodes(current_user=None):
     resp = ResponseFormater()
@@ -28,7 +28,7 @@ def get_nodes(current_user=None):
     resp.add_result(o_nodes)
     return resp.get_response()
 
-@node_pages.route('/nodes', methods=['POST'])
+@node_pages.route('/api/v1/inventory/nodes', methods=['POST'])
 @authenticate('getNode')
 def post_nodes(current_user=None):
     resp = ResponseFormater()
@@ -47,7 +47,7 @@ def post_nodes(current_user=None):
     resp.add_result(o_nodes)
     return resp.get_response()
 
-@node_pages.route('/nodes', methods=['PUT'])
+@node_pages.route('/api/v1/inventory/nodes', methods=['PUT'])
 @authenticate('addNode')
 def put_nodes(current_user=None):
     resp = ResponseFormater()
@@ -65,7 +65,7 @@ def put_nodes(current_user=None):
         return resp.get_response()
 
 
-@node_pages.route('/nodes', methods=['DELETE'])
+@node_pages.route('/api/v1/inventory/nodes', methods=['DELETE'])
 @authenticate('deleteNode')
 def delete_nodes(current_user=None):
     resp = ResponseFormater()

@@ -10,7 +10,7 @@ from app.utils.formater import ResponseFormater
 group_pages = Blueprint('group', __name__)
 
 
-@group_pages.route('/groups', methods=['GET'])
+@group_pages.route('/api/v1/inventory/groups', methods=['GET'])
 @authenticate('getGroup')
 def get_groups(current_user=None, resp=None):
     if resp is None:
@@ -25,7 +25,7 @@ def get_groups(current_user=None, resp=None):
     return resp.get_response()
 
 
-@group_pages.route('/groups', methods=['PUT'])
+@group_pages.route('/api/v1/inventory/groups', methods=['PUT'])
 @authenticate('getGroup')
 def put_groups(current_user=None, resp=None):
     if resp is None:
@@ -91,7 +91,7 @@ def put_groups(current_user=None, resp=None):
     return resp.get_response()
 
 
-@group_pages.route('/groups', methods=['DELETE'])
+@group_pages.route('/api/v1/inventory/groups', methods=['DELETE'])
 @authenticate('deleteGroups')
 def delete_groups(current_user=None):
     resp = ResponseFormater()
