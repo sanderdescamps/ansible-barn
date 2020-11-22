@@ -61,6 +61,7 @@ app.register_blueprint(node_pages)
 app.register_blueprint(inventory_pages)
 app.register_blueprint(export_pages)
 app.register_blueprint(upload_pages)
+app.register_blueprint(login_pages)
 if config.get_barn_config().get("debug_mode", False):
     app.register_blueprint(debug_pages)
 
