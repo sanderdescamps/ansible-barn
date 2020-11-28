@@ -82,7 +82,7 @@ class InventoryModule(BaseInventoryPlugin):
     def parse(self, inventory, loader, path, cache=True):
         ''' parses the inventory file '''
 
-        
+        if path.endswith("@barn"):
         if os.path.exists(os.path.join(os.environ['HOME'],".barn.yml")): 
             self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yml"), loader)
         elif os.path.exists(os.path.join(os.environ['HOME'],".barn.yaml")): 
@@ -91,8 +91,7 @@ class InventoryModule(BaseInventoryPlugin):
             self._load_connection_file("/etc/barn/barn.yml", loader)
         elif os.path.exists("/etc/barn/barn.yaml"):
             self._load_connection_file("/etc/barn/barn.yaml", loader)
-        
-        if not path.endswith("@barn"):
+        else:
             self._load_connection_file(path, loader)
 
         query_args = dict()
