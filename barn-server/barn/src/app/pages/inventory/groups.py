@@ -24,6 +24,19 @@ def get_groups(current_user=None, resp=None):
     resp.add_result(o_groups)
     return resp.get_response()
 
+@group_pages.route('/api/v1/inventory/groups', methods=['POST'])
+@authenticate('getGroup')
+def post_groups(current_user=None, resp=None):
+    if resp is None:
+        resp = ResponseFormater()
+    data = request.get_json(silent=True)
+
+    query_args = dict()
+    if "name" in data:
+        query_args["name"] = data.get("name")
+    o_groups = Group.objects(**query_args)
+    resp.add_result(o_groups)
+    return resp.get_response()
 
 @group_pages.route('/api/v1/inventory/groups', methods=['PUT'])
 @authenticate('getGroup')
