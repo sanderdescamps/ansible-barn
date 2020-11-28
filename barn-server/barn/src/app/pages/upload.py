@@ -51,7 +51,6 @@ def post_upload_file(current_user=None):
 
         for group in to_add.get("groups", []):
             o_group = Group.from_json(group)
-            print(o_group.to_json())
             o_group.save()
 
         return jsonify(to_add)
