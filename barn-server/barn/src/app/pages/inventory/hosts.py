@@ -36,9 +36,11 @@ def post_hosts(current_user=None):
     resp.add_result(Host.objects(**query_args))
     return resp.get_response()
 
-@host_pages.route('/api/v1/inventory/hosts', methods=['PUT'])
+
+@host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])
+@host_pages.route('/api/v1/inventory/hosts/<action>', methods=['PUT'])
 @authenticate('addHost')
-def put_hosts(current_user=None, resp=None):
+def put_hosts(current_user=None,action=None, resp=None):
     if resp is None:
         resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
@@ -51,28 +53,39 @@ def put_hosts(current_user=None, resp=None):
 
     # Create Host
     o_host = Host.objects(name=name).first()
-    if o_host is None:
-        try:
-            o_host = Host(name=name)
-            resp.succeed(changed=True, status=HTTPStatus.CREATED)
-        except NotUniqueError:
-            resp.failed(msg='Duplicate Node: %s already exist' % (args.get("name")))
+    if o_host is not None and action == "add":
+        resp.failed(msg='Duplicate Node: %s already exist' % (args.get("name")))
+        return resp.get_response()
+    elif o_host is None:
+        if action == "update":
+            resp.failed(msg='Host not found: %s Does not exist' % (args.get("name")))
             return resp.get_response()
+        else:
+            try:
+                o_host = Host(name=name)
+                resp.succeed(changed=True, status=HTTPStatus.CREATED)
+            except NotUniqueError:
+                resp.failed(msg='Duplicate Node: %s already exist' % (args.get("name")))
+                return resp.get_response()
 
     
     # Set variables
     barn_vars = args.get("vars", {})
+    if action == "set" and barn_vars != o_host.vars:
+        o_host.vars = {}
+
     for k, v in barn_vars.items():
         if o_host.vars.get(k, None) != v:
             o_host.vars[k] = v
             resp.changed()
 
     # Delete variables
-    vars_to_remove = args.get("vars_absent", [])
-    for var_to_remove in vars_to_remove:
-        if var_to_remove in o_host.vars:
-            del o_host.vars[var_to_remove]
-            resp.changed()
+    if action != "add":
+        vars_to_remove = args.get("vars_absent", [])
+        for var_to_remove in vars_to_remove:
+            if var_to_remove in o_host.vars:
+                del o_host.vars[var_to_remove]
+                resp.changed()
 
     # Save Host
     if resp.get_changed():
