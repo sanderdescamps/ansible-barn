@@ -98,12 +98,12 @@ class Barn(object):
             )
         return None
 
+
 class BarnContext(dict):
     pass
 
 
 pass_barn_context = click.make_pass_decorator(BarnContext)
-
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
@@ -131,7 +131,8 @@ def main(ctx=None, **kwargs):
     if barn_password:
         barn.barn_password = barn_password
     elif kwargs.get("ask_barn_password"):
-        barn.barn_password = click.prompt('Barn password', hide_input=True, type=str)
+        barn.barn_password = click.prompt(
+            'Barn password', hide_input=True, type=str)
 
     barn_url = kwargs.get("barn_url")
     if barn_url:
@@ -142,60 +143,158 @@ def main(ctx=None, **kwargs):
 
     ctx.obj = BarnContext(barn=barn)
 
+
 @main.group()
 @pass_barn_context
-def get(barn_context=None):
+def get(barn_context=None, *args, **kwargs):
+    pass
+
+@main.group()
+@pass_barn_context
+def add(barn_context=None):
+    pass
+
+@main.group()
+@pass_barn_context
+def delete(barn_context=None):
     pass
 
 @get.command(name="host")
-@click.option('--format',help="Output format",type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
-@click.option('--json','-j',help="Same as --format=json", is_flag=True, default=False)
-@click.option('--yaml',help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
 @click.argument('host', required=False)
 @pass_barn_context
-def get_host(barn_context=None,host=None, **kwargs):
+def get_host(barn_context=None, host=None, **kwargs):
     barn = barn_context.get("barn")
     data = {}
     if host:
         data["name"] = host
-    results = barn.request("POST","/api/v1/inventory/hosts", data=data)
-    if not results or results.get("result",[]) == []:
+    results = barn.request("POST", "/api/v1/inventory/hosts", data=data)
+    if not results or results.get("result", []) == []:
         click.echo("no results found")
         sys.exit(1)
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results.get("result",[]), indent=2))
+        click.echo(json.dumps(results, indent=2))
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results.get("result",[]), indent=2))
+        click.echo(yaml.dump(results, indent=2))
     else:
-        for result in results.get("result",[]):
+        for result in results.get("result", []):
             click.echo(result.get("name"))
 
+
 @get.command(name="group")
-@click.option('--format',help="Output format",type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
-@click.option('--json','-j',help="Same as --format=json", is_flag=True, default=False)
-@click.option('--yaml',help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
 @click.argument('group', required=False)
 @pass_barn_context
-def get_group(barn_context=None, group=None,**kwargs):
+def get_group(barn_context=None, group=None, **kwargs):
     barn = barn_context.get("barn")
     data = {}
     if group:
         data["name"] = group
-    results = barn.request("POST","/api/v1/inventory/groups", data=data)
-    if not results or results.get("result",[]) == []:
+    results = barn.request("POST", "/api/v1/inventory/groups", data=data)
+    if not results or results.get("result", []) == []:
         click.echo("no results found")
         sys.exit(1)
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results.get("result",[]), indent=2))
+        click.echo(json.dumps(results, indent=2))
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results.get("result",[]), indent=2))
+        click.echo(yaml.dump(results, indent=2))
     else:
-        for result in results.get("result",[]):
+        for result in results.get("result", []):
             click.echo(result.get("name"))
 
 
+@get.command(name="node")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--type', '-t', help="Define type of the node", default=None, type=click.Choice(["host","group"]))
+@click.argument('node', required=False)
+@pass_barn_context
+def get_node(barn_context=None, node=None, **kwargs):
+    barn = barn_context.get("barn")
+    data = {}
+    if node:
+        data["name"] = node
+    if kwargs.get("type"):
+        data["type"] = kwargs.get("type")
+    results = barn.request("POST", "/api/v1/inventory/nodes", data=data)
+    if not results or results.get("result", []) == []:
+        click.echo("no results found")
+        sys.exit(1)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(json.dumps(results, indent=2))
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(yaml.dump(results, indent=2))
+    else:
+        for result in results.get("result", []):
+            click.echo(result.get("name"))
 
-@main.command()
+@add.command(name="host")
+@click.option('--variables', '--var', '-a', help="Set variable", multiple=True)
+@click.option('--group', '-g', help="Group where host belongs to", multiple=True)
+@click.option('--group', '-g', help="Group where host belongs to", multiple=True)
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
+@click.argument('name', required=True)
+@pass_barn_context
+def add_host(barn_context=None, name=None, **kwargs):
+    """
+    name: Name of the host
+    """
+    barn = barn_context.get("barn")
+    data = dict(vars={})
+    if name:
+        data["name"] = name
+    for variable in kwargs.get("variables",[]):
+        key, value = variable.split("=")
+        data["vars"][key.strip()] = value.strip().strip('"').strip("'")
+    
+    results = barn.request("PUT", "/api/v1/inventory/hosts/add", data=data)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(json.dumps(results, indent=2))
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(yaml.dump(results, indent=2))
+    else:
+        if results.get("failed"):
+            for msg in results.get("msg"):
+                click.echo("Failed: %s"%(msg))
+        else:
+            for result in results.get("result", []):
+                click.echo(result.get("name"))
+
+@delete.command(name="host")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
+@click.argument('name', required=True)
+@pass_barn_context
+def delete_host(barn_context=None, name=None, **kwargs):
+    """
+    name: Name of the host
+    """
+    barn = barn_context.get("barn")
+    data = dict(name=name)
+    results = barn.request("DELETE", "/api/v1/inventory/hosts", data=data)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(json.dumps(results, indent=2))
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(yaml.dump(results, indent=2))
+    else:
+        if results.get("failed"):
+            for msg in results.get("msg"):
+                click.echo("Failed: %s"%(msg))
+        else:
+            for result in results.get("result", []):
+                click.echo(result.get("name"))
+
+
+
+@main.command(name="test", context_settings=dict(ignore_unknown_options=True))
 @pass_barn_context
 def test(barn_context=None, **kwargs):
     print(kwargs)
@@ -203,28 +302,27 @@ def test(barn_context=None, **kwargs):
 
 
 @main.command()
-@click.option('-f','--force',help="Don't ask for confirmation", is_flag=True, default=False)
+@click.option('-f', '--force', help="Don't ask for confirmation", is_flag=True, default=False)
 @pass_barn_context
 def flush(barn_context=None, **kwargs):
     barn = barn_context.get("barn")
-    confirmed = kwargs.get("force",False)
+    confirmed = kwargs.get("force", False)
     if not confirmed:
         confirmed = click.confirm('Are you sure you want to clean barn?')
     if confirmed:
-        barn.request("DELETE","/flush")
+        barn.request("DELETE", "/flush")
+
 
 @main.command()
-@click.option('-f','--force',help="Don't ask for confirmation", is_flag=True, default=False)
+@click.option('-f', '--force', help="Don't ask for confirmation", is_flag=True, default=False)
 @pass_barn_context
 def init(barn_context=None, **kwargs):
     barn = barn_context.get("barn")
-    confirmed = kwargs.get("force",False)
+    confirmed = kwargs.get("force", False)
     if not confirmed:
         confirmed = click.confirm('Are you sure you want to initialize barn?')
     if confirmed:
-        barn.request("PUT","/init")
-
-
+        barn.request("PUT", "/init")
 
 
 if __name__ == '__main__':
