@@ -38,7 +38,9 @@ paths:
     get:
       summary: Return an json Ansible inventory file
       description: |
-        Alias: https://<hostname>:<port>/ansible_inventory or https://<hostname>:<port>/inventory_file
+        Alias: 
+          - https://{hostname}:{port}/ansible_inventory
+          - https://{hostname}:{port}/inventory_file
       responses:
         "200":
           description: OK
@@ -108,6 +110,8 @@ paths:
     $ref: "./nodes.yml"
   /api/v1/inventory/hosts:
     $ref: "./hosts.yml"
+  /api/v1/inventory/hosts/{action}:
+    $ref: "./hosts_put.yml"
   /api/v1/inventory/groups:
     $ref: "./groups.yml"
 components:
