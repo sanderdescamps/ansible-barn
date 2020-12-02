@@ -107,12 +107,12 @@ pass_barn_context = click.make_pass_decorator(BarnContext)
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
-@click.option('--ask_barn_user', help='Ask for barn user', is_flag=True, default=False, show_default=True)
-@click.option('--ask_barn_password', help='Ask for barn password', is_flag=True, default=False, show_default=True)
-@click.option('-u', '--barn_user', '--user', help='User to authenticate against barn')
-@click.option('-p', '--barn_password', '--password', help='Password to authenticate against barn')
-@click.option('-h', '--barn_url', '--url', help='Barn url', show_default=True)
-@click.option('-t', '--barn_token', '--token', help='Barn authentication token')
+@click.option('--ask-barn-user', help='Ask for barn user', is_flag=True, default=False, show_default=True)
+@click.option('--ask-barn-password', help='Ask for barn password', is_flag=True, default=False, show_default=True)
+@click.option('-u', '--barn-user', '--user', help='User to authenticate against barn')
+@click.option('-p', '--barn-password', '--password', help='Password to authenticate against barn')
+@click.option('-h', '--barn-url', '--url', help='Barn url', show_default=True)
+@click.option('-t', '--barn-token', '--token', help='Barn authentication token')
 @click.pass_context
 def main(ctx=None, **kwargs):
     barn = None
