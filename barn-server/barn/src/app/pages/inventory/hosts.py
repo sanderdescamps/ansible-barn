@@ -100,7 +100,6 @@ def put_hosts(current_user=None,action=None, resp=None):
             o_group = Group.objects(name=group).first()
             if not o_group and args.get('create_groups', True):
                 o_group = Group(name=group)
-                print("create %s"%(group))
             if o_group:
                 o_groups_add_list.append(o_group)
 

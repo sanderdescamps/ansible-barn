@@ -32,7 +32,6 @@ def remove_empty_fields(data):
             elif bool(value):
                 output.append(value)
     else:
-        print(type(data))
         output = data
     return output
 
