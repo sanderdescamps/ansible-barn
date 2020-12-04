@@ -148,16 +148,17 @@ def put_hosts(current_user=None,action=None, resp=None):
 @authenticate('deleteHost')
 def delete_hosts(current_user=None):
     resp = ResponseFormater()
+    args = merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()
-    if "name" in request.args:
-        query_args["name__in"] = list_parser(request.args.get("name"))
+    if "name" in args:
+        query_args["name__in"] = list_parser(args.get("name"))
     else:
         resp.failed(msg='name not defined')
         return resp.get_response()
 
     o_hosts = Host.objects(**query_args)
     if o_hosts.count() < 1:
-        resp.failed(msg='%s not found' % (request.args.get('name')))
+        resp.failed(msg='%s not found' % (args.get('name')))
         return resp.get_response()
     s_hosts = ','.join(o_hosts.scalar('name'))
     o_hosts.delete()
