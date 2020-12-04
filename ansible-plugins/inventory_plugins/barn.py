@@ -83,14 +83,14 @@ class InventoryModule(BaseInventoryPlugin):
         ''' parses the inventory file '''
 
         if path.endswith("@barn"):
-        if os.path.exists(os.path.join(os.environ['HOME'],".barn.yml")): 
-            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yml"), loader)
-        elif os.path.exists(os.path.join(os.environ['HOME'],".barn.yaml")): 
-            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yaml"), loader)
-        if os.path.exists("/etc/barn/barn.yml"):
-            self._load_connection_file("/etc/barn/barn.yml", loader)
-        elif os.path.exists("/etc/barn/barn.yaml"):
-            self._load_connection_file("/etc/barn/barn.yaml", loader)
+            if os.path.exists(os.path.join(os.environ['HOME'],".barn.yml")): 
+                self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yml"), loader)
+            elif os.path.exists(os.path.join(os.environ['HOME'],".barn.yaml")): 
+                self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yaml"), loader)
+            if os.path.exists("/etc/barn/barn.yml"):
+                self._load_connection_file("/etc/barn/barn.yml", loader)
+            elif os.path.exists("/etc/barn/barn.yaml"):
+                self._load_connection_file("/etc/barn/barn.yaml", loader)
         else:
             self._load_connection_file(path, loader)
 
