@@ -1,0 +1,38 @@
+---
+- name: Test playbook for custom module
+  gather_facts: False
+  hosts: 
+      - srvdns01.myhomecloud.be
+  tasks:
+    - name: Add host to barn
+      barn_write:
+        barn_host: "127.0.0.1"
+        barn_user: "admin"
+        barn_password: "admin"
+        barn_port: 5000
+        state: present
+        vars: 
+          test: testvariable
+          creationdate: vandaag
+        remove_vars:
+          - ansible_host
+      register: output_barn_write
+
+    - name: Print output barn_write
+      debug: 
+        var: output_barn_write
+
+    - name: Read info from Barn
+      barn_read:
+        barn_host: "127.0.0.1"
+        barn_user: "admin"
+        barn_password: "admin"
+        barn_port: 5000
+        exclude: test
+        load_to_facts: False
+      register: output_barn_read
+
+    - name: Print output barn_read
+      debug: 
+        var: output_barn_read
+    
