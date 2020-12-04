@@ -11,8 +11,7 @@ def authenticate(*roles):
         @wraps(f)
         def decorator(*args, **kwargs):
             resp = ResponseFormater()
-            current_user = kwargs.get("current_user",None)
-            
+            current_user = kwargs.get("current_user", None)
 
             token = request.headers.get('x-access-tokens', None)
             if current_user:
