@@ -14,7 +14,6 @@
         vars: 
           test: sdqf
           creationdate: vandaag
-          # to_remove: "qjfdmqlsdjfmqlsdfq"
         remove_vars: 
           - "something_which_not_exists"
           - to_remove
