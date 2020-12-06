@@ -2,8 +2,8 @@ from flask import request, Blueprint
 from flask_login import login_required
 from app.models import Node
 from app.utils import merge_args_data, list_parser
-from app.pages.inventory.hosts import put_hosts
-from app.pages.inventory.groups import put_groups
+from app.blueprints.inventory.hosts import put_hosts
+from app.blueprints.inventory.groups import put_groups
 from app.utils.formater import ResponseFormater
 
 node_pages = Blueprint('nodes', __name__)

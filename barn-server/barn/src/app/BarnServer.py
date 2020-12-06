@@ -5,15 +5,15 @@ import string
 import configparser
 from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
-from app.pages.admin.users import user_pages
-from app.pages.admin.export import export_pages
-from app.pages.inventory.hosts import host_pages
-from app.pages.inventory.groups import group_pages
-from app.pages.inventory.nodes import node_pages
-from app.pages.inventory_export import inventory_pages
-from app.pages.debug import debug_pages
-from app.pages.upload import upload_pages
-from app.pages.login import login_pages
+from app.blueprints.admin.users import user_pages
+from app.blueprints.admin.export import export_pages
+from app.blueprints.inventory.hosts import host_pages
+from app.blueprints.inventory.groups import group_pages
+from app.blueprints.inventory.nodes import node_pages
+from app.blueprints.inventory_export import inventory_pages
+from app.blueprints.debug import debug_pages
+from app.blueprints.upload import upload_pages
+from app.blueprints.login import login_pages
 from app.models import User
 
 
