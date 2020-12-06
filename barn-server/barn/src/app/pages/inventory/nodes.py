@@ -1,7 +1,7 @@
 from flask import request, Blueprint
+from flask_login import login_required
 from app.models import Node
 from app.utils import merge_args_data, list_parser
-from app.auth import authenticate
 from app.pages.inventory.hosts import put_hosts
 from app.pages.inventory.groups import put_groups
 from app.utils.formater import ResponseFormater
@@ -10,8 +10,8 @@ node_pages = Blueprint('nodes', __name__)
 
 
 @node_pages.route('/api/v1/inventory/nodes', methods=['GET'])
-@authenticate('getNode')
-def get_nodes(current_user=None):
+@login_required
+def get_nodes():
     resp = ResponseFormater()
     args = request.args
  
@@ -29,8 +29,8 @@ def get_nodes(current_user=None):
     return resp.get_response()
 
 @node_pages.route('/api/v1/inventory/nodes', methods=['POST'])
-@authenticate('getNode')
-def post_nodes(current_user=None):
+@login_required
+def post_nodes():
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
@@ -48,8 +48,8 @@ def post_nodes(current_user=None):
     return resp.get_response()
 
 @node_pages.route('/api/v1/inventory/nodes', methods=['PUT'])
-@authenticate('addNode')
-def put_nodes(current_user=None):
+@login_required
+def put_nodes():
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
     node_type = args.get("type", None)
@@ -57,17 +57,17 @@ def put_nodes(current_user=None):
         resp.failed(msg='type not defined')
         return resp.get_response()
     elif node_type.lower() == "host":
-        return put_hosts(current_user=current_user,resp=resp)
+        return put_hosts(resp=resp)
     elif node_type.lower() == "group":
-        return put_groups(current_user=current_user,resp=resp)
+        return put_groups(resp=resp)
     else:
         resp.failed(msg='unknown type: %s' % (node_type))
         return resp.get_response()
 
 
 @node_pages.route('/api/v1/inventory/nodes', methods=['DELETE'])
-@authenticate('deleteNode')
-def delete_nodes(current_user=None):
+@login_required
+def delete_nodes():
     resp = ResponseFormater()
     query_args = dict()
     if "name" in request.args:

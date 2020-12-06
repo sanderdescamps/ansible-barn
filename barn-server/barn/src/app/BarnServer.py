@@ -1,5 +1,7 @@
 import os
 import sys
+import random
+import string
 import configparser
 from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
@@ -39,6 +41,12 @@ class BarnServer(Flask):
         super(BarnServer, self).__init__(__name__,**kwargs)
         self.load_config_file(config_path)
         self._register_blueprints()
+        # self.db = MongoEngine()
+        # self.db.init_app(self)
+        # self.user_datastore = MongoEngineUserDatastore(self.db, User, Role)
+        # self.security = Security(self, self.user_datastore)
+        
+
 
     def load_config_file(self,path):
         config = None
@@ -47,13 +55,17 @@ class BarnServer(Flask):
         else:
             sys.exit("Could not load config file. Only allow .ini or .cfg files")
 
+        # Session key
+        default_random_key = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(32))
+        self.secret_key = config.get("barn",{}).get("barn_session_key",default_random_key)
+
         #Verify MongoDB Configuration
         valid_config = True
         if "mongodb" in config:
             for required_setting in ["mongo_user","mongo_password","mongo_host","mongo_port","mongo_db"]:
                 if not config.get("mongodb",{}).get(required_setting):
                     valid_config = False
-                    self.logger.error("{} has no {} setting in the mongo section".format(path,required_setting))   
+                    self.logger.error("{} has no {} setting in the mongo section".format(path, required_setting))   
         else:
             valid_config = False
             self.logger.error("{} has no mongo settings".format(path))

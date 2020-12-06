@@ -2,7 +2,7 @@ from http import HTTPStatus
 from flask import Blueprint, request
 from mongoengine.errors import NotUniqueError
 from app.utils import list_parser, merge_args_data
-from app.auth import authenticate
+from flask_login import login_required
 from app.models import Group, Host
 from app.utils.formater import ResponseFormater
 
@@ -11,8 +11,8 @@ group_pages = Blueprint('group', __name__)
 
 
 @group_pages.route('/api/v1/inventory/groups', methods=['GET'])
-@authenticate('getGroup')
-def get_groups(current_user=None, resp=None):
+@login_required
+def get_groups(resp=None):
     if resp is None:
         resp = ResponseFormater()
     args = request.args
@@ -25,8 +25,8 @@ def get_groups(current_user=None, resp=None):
     return resp.get_response()
 
 @group_pages.route('/api/v1/inventory/groups', methods=['POST'])
-@authenticate('getGroup')
-def post_groups(current_user=None, resp=None):
+@login_required
+def post_groups(resp=None):
     if resp is None:
         resp = ResponseFormater()
     data = request.get_json(silent=True)
@@ -39,8 +39,8 @@ def post_groups(current_user=None, resp=None):
     return resp.get_response()
 
 @group_pages.route('/api/v1/inventory/groups', methods=['PUT'])
-@authenticate('getGroup')
-def put_groups(current_user=None, resp=None):
+@login_required
+def put_groups(resp=None):
     if resp is None:
         resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
@@ -105,8 +105,8 @@ def put_groups(current_user=None, resp=None):
 
 
 @group_pages.route('/api/v1/inventory/groups', methods=['DELETE'])
-@authenticate('deleteGroups')
-def delete_groups(current_user=None):
+@login_required
+def delete_groups():
     resp = ResponseFormater()
     query_args = dict()
     if "name" in request.args:

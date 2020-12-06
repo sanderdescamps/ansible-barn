@@ -1,17 +1,15 @@
 import uuid
-import datetime
-import jwt
-from flask import request, jsonify, Blueprint, current_app
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import request, Blueprint
+from flask_login import login_required
+from werkzeug.security import generate_password_hash
 from mongoengine.errors import NotUniqueError
-from app.auth import authenticate
 from app.models import User
 from app.utils.formater import ResponseFormater
 
 user_pages = Blueprint('user', __name__)
 
-@authenticate("createUser")
 @user_pages.route('/api/v1/admin/register', methods=['GET', 'POST'])
+@login_required
 def signup_user():
     resp = ResponseFormater()
     data = request.get_json()
@@ -27,8 +25,9 @@ def signup_user():
     return resp.succeed(msg='registered successfully').get_response()
 
 
-@authenticate("manageUsers")
+
 @user_pages.route('/api/v1/admin/users', methods=['GET'])
+@login_required
 def get_users():
     resp = ResponseFormater()
     users = User.objects()

@@ -1,19 +1,18 @@
 from flask import request, Blueprint
+from flask_login import login_required
 from mongoengine.errors import NotUniqueError
 from http import HTTPStatus
 from app.models import Host, Group
 from app.utils import merge_args_data, list_parser
 from app.utils.formater import ResponseFormater
-from app.auth import authenticate
-
 
 
 host_pages = Blueprint('host', __name__)
 
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['GET'])
-@authenticate('getHost')
-def get_hosts(current_user=None, resp=None):
+@login_required
+def get_hosts(resp=None):
     if resp is None:
         resp = ResponseFormater()
     args = request.args
@@ -25,8 +24,8 @@ def get_hosts(current_user=None, resp=None):
     return resp.get_response()
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['POST'])
-@authenticate('getHost')
-def post_hosts(current_user=None):
+@login_required
+def post_hosts():
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
 
@@ -39,8 +38,8 @@ def post_hosts(current_user=None):
 
 @host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])
 @host_pages.route('/api/v1/inventory/hosts/<action>', methods=['PUT'])
-@authenticate('addHost')
-def put_hosts(current_user=None,action=None, resp=None):
+@login_required
+def put_hosts(action=None, resp=None):
     if resp is None:
         resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
@@ -144,8 +143,8 @@ def put_hosts(current_user=None,action=None, resp=None):
 
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['DELETE'])
-@authenticate('deleteHost')
-def delete_hosts(current_user=None):
+@login_required
+def delete_hosts():
     resp = ResponseFormater()
     args = merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()

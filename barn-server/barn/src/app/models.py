@@ -1,8 +1,8 @@
 import uuid
 from abc import abstractmethod
-from mongoengine import Document, StringField, DictField, ListField, ReferenceField
+from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
-
+from flask_login.mixins import UserMixin
 
 class Role(Document):
     name = StringField(required=True)
@@ -27,12 +27,13 @@ class Role(Document):
             )
 
 
-class User(Document):
+class User(Document, UserMixin):
     public_id = StringField(default=str(uuid.uuid4()))
     name = StringField()
     username = StringField(required=True, unique=True)
     password_hash = StringField()
     roles = ListField(ReferenceField(Role))
+    active = BooleanField(default=True)
 
     def __init__(self, *args, **kwargs):
         if "password" in kwargs and kwargs.get("password") is not None:
@@ -58,6 +59,9 @@ class User(Document):
 
     def __repr__(self):
         return '<User %r>' % (self.name)
+    
+    def get_id(self):
+        return self.public_id
 
     def has_role(self, role):
         return role in self.roles

@@ -1,10 +1,10 @@
 from functools import wraps
 import jwt
 from werkzeug.security import check_password_hash
-from flask import request, make_response, current_app
+from flask import request, current_app, redirect, url_for
+from flask_login import LoginManager
 from app.models import User
 from app.utils.formater import ResponseFormater
-
 
 def authenticate(*roles):
     def require_token(f):
@@ -47,3 +47,55 @@ def authenticate(*roles):
 
         return decorator
     return require_token
+
+
+login_manager = LoginManager()
+
+login_manager.login_view = "/login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.objects(public_id=user_id).first()
+
+# @login_manager.header_loader
+# def load_user_from_header(header_val):
+#     header_val = header_val.replace('Basic ', '', 1)
+#     try:
+#         header_val = base64.b64decode(header_val)
+#     except TypeError:
+#         pass
+#     return User.query.filter_by(api_key=header_val).first()
+
+@login_manager.request_loader
+def load_user_from_request(l_request):
+    auth = l_request.authorization
+    token = l_request.headers.get('x-access-tokens', None)
+
+    if token is not None and token != "":
+        data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
+        try:
+            check_user = User.objects(public_id=data.get("public_id")).first()
+            if check_user:
+                return check_user
+        except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
+            pass
+        except jwt.exceptions.ExpiredSignatureError:
+            pass
+
+    elif auth and auth.username and auth.password:
+        check_user = User.objects(username=auth.username).first()
+        if check_password_hash(check_user.password_hash, auth.password):
+            return check_user
+
+    # finally, return None if both methods did not login the user
+    return None
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    schema = request.headers.get("X-Forwarded-Proto")
+    host = request.headers.get("X-Forwarded-Host")
+    port = request.headers.get("X-Forwarded-Port")
+    if schema and port and host:
+        return redirect("{}://{}:{}{}".format(schema, host, port, url_for("login.login", next=request.endpoint)))
+    else:
+        return redirect(url_for("login.login", next=request.endpoint))

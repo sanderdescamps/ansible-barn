@@ -1,14 +1,15 @@
 from flask import Blueprint, jsonify, current_app
+from flask_login import login_required
 from app.models import Group, Role, Host, User
-from app.auth import authenticate
+
 
 
 debug_pages = Blueprint('debug', __name__)
 
 
 @debug_pages.route('/init', methods=['PUT'])
-@authenticate("guest")
-def init(current_user=None):
+@login_required
+def init():
     Role.objects(name__not__iexact="admin").delete()
     Role(name="admin", description="Allow anything")
     Role(name="addHost", description="Add a host to the inventory").save()
@@ -42,8 +43,8 @@ def init(current_user=None):
 
 
 @debug_pages.route('/flush', methods=['DELETE'])
-@authenticate("admin")
-def flush(current_user=None):
+@login_required
+def flush():
     Host.objects().delete()
     Group.objects().delete()
     return jsonify({'message': 'Database has been flushed'})
