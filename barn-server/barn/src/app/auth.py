@@ -50,21 +50,11 @@ def authenticate(*roles):
 
 
 login_manager = LoginManager()
-
 login_manager.login_view = "/login"
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.objects(public_id=user_id).first()
-
-# @login_manager.header_loader
-# def load_user_from_header(header_val):
-#     header_val = header_val.replace('Basic ', '', 1)
-#     try:
-#         header_val = base64.b64decode(header_val)
-#     except TypeError:
-#         pass
-#     return User.query.filter_by(api_key=header_val).first()
 
 @login_manager.request_loader
 def load_user_from_request(l_request):
@@ -87,7 +77,6 @@ def load_user_from_request(l_request):
         if check_password_hash(check_user.password_hash, auth.password):
             return check_user
 
-    # finally, return None if both methods did not login the user
     return None
 
 @login_manager.unauthorized_handler

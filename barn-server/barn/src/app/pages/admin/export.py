@@ -8,7 +8,6 @@ from app.utils import merge_args_data, remove_empty_fields
 
 export_pages = Blueprint('export', __name__)
 
-
 @export_pages.route('/api/v1/admin/export', methods=['GET'])
 @login_required
 def get_export():
