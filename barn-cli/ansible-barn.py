@@ -28,8 +28,10 @@ class Barn(object):
         self.barn_password = password
         self.barn_token = token
 
-    def request(self, method, path, headers={}, data={}):
+    def request(self, method, path, headers=None, data=None):
         query_args = dict()
+        headers = headers if headers is not  None else {}
+        data = data if data is not None else {}
         headers.update({'Content-type': 'application/json'})
         query_args["headers"] = headers
         query_args["data"] = json.dumps(data).encode('utf-8')
