@@ -2,7 +2,7 @@
 - name: Test playbook for custom module
   gather_facts: False
   hosts: 
-      - srvdns01.myhomecloud.be
+      - testhost.myhomecloud.be
   tasks:
     - name: barn write
       barn_write:
@@ -14,7 +14,6 @@
         vars: 
           test: sdqf
           creationdate: vandaag
-          # to_remove: "qjfdmqlsdjfmqlsdfq"
         remove_vars: 
           - "something_which_not_exists"
           - to_remove
@@ -28,18 +27,27 @@
         barn_host: "127.0.0.1"
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        # barn_token: "qmsdklfjqsdmlkfjqsdmlkfjqmsdlkfjqmlskdjf"
         barn_port: 5000
-        state: absent
-        exclude: ip_address
-        load_to_facts: True
       delegate_to: localhost
       register: output
 
     - name: output barn read
       debug: 
         var: "output"
-        
+
+    - name: Remove new host
+      barn_write:
+        barn_host: "127.0.0.1"
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+        barn_port: 5000
+        state: absent
+      register: output 
+
+    - name: Output host removal
+      debug: 
+        var: "output"
+     
     - name: print facts
       debug: 
         var: hostvars[inventory_hostname]
