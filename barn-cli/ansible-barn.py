@@ -5,7 +5,6 @@ import json
 import yaml
 import click
 from ansible.module_utils.urls import Request, urllib_error
-from lib.click_group_with_options import GroupWithCommandOptions
 
 
 BARN_CONFIG_PATHS = [
@@ -151,15 +150,18 @@ def main(ctx=None, **kwargs):
 def get(barn_context=None, *args, **kwargs):
     pass
 
+
 @main.group()
 @pass_barn_context
 def add(barn_context=None):
     pass
 
+
 @main.group()
 @pass_barn_context
 def delete(barn_context=None):
     pass
+
 
 @get.command(name="host")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
@@ -213,7 +215,7 @@ def get_group(barn_context=None, group=None, **kwargs):
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
-@click.option('--type', '-t', help="Define type of the node", default=None, type=click.Choice(["host","group"]))
+@click.option('--type', '-t', help="Define type of the node", default=None, type=click.Choice(["host", "group"]))
 @click.argument('node', required=False)
 @pass_barn_context
 def get_node(barn_context=None, node=None, **kwargs):
@@ -235,6 +237,7 @@ def get_node(barn_context=None, node=None, **kwargs):
         for result in results.get("result", []):
             click.echo(result.get("name"))
 
+
 @add.command(name="host")
 @click.option('--variables', '--var', '-a', help="Set variable", multiple=True)
 @click.option('--group', '-g', help="Group where host belongs to", multiple=True)
@@ -252,10 +255,10 @@ def add_host(barn_context=None, name=None, **kwargs):
     data = dict(vars={})
     if name:
         data["name"] = name
-    for variable in kwargs.get("variables",[]):
+    for variable in kwargs.get("variables", []):
         key, value = variable.split("=")
         data["vars"][key.strip()] = value.strip().strip('"').strip("'")
-    
+
     results = barn.request("PUT", "/api/v1/inventory/hosts/add", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(json.dumps(results, indent=2))
@@ -264,10 +267,11 @@ def add_host(barn_context=None, name=None, **kwargs):
     else:
         if results.get("failed"):
             for msg in results.get("msg"):
-                click.echo("Failed: %s"%(msg))
+                click.echo("Failed: %s" % (msg))
         else:
             for result in results.get("result", []):
                 click.echo(result.get("name"))
+
 
 @delete.command(name="host")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
@@ -289,11 +293,10 @@ def delete_host(barn_context=None, name=None, **kwargs):
     else:
         if results.get("failed"):
             for msg in results.get("msg"):
-                click.echo("Failed: %s"%(msg))
+                click.echo("Failed: %s" % (msg))
         else:
             for result in results.get("result", []):
                 click.echo(result.get("name"))
-
 
 
 @main.command(name="test", context_settings=dict(ignore_unknown_options=True))
