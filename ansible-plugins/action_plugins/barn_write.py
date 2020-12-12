@@ -31,9 +31,19 @@ class ActionModule(ActionBase):
             result['failed'] = True
             result['msg'] = "barn_host is required"
             return result
-
-        if state == 'present':
-            try:
+        
+        query_args = dict()
+        query_args["headers"] = {'Content-type': 'application/json'}
+        if token:
+            query_args["headers"]["x-access-tokens"] = token
+        if barn_user:
+            query_args["url_username"] = barn_user
+            query_args["force_basic_auth"] = True
+        if barn_password:
+            query_args["url_password"] = barn_password
+            query_args["force_basic_auth"] = True
+        try:
+            if state == 'present':
                 data = {
                     "name": task_vars.get("inventory_hostname")
                 }
@@ -53,37 +63,31 @@ class ActionModule(ActionBase):
                     else:
                         self._display.warning("groups_set can't be used in combination with groups, groups_present and groups_absent. 'groups_set' will be ignored.")
 
-                query_args = dict()
+                
                 query_args["data"] = json.dumps(data).encode('utf-8')
-                query_args["headers"] = {'Content-type': 'application/json'}
-                if token:
-                    query_args["headers"]["x-access-tokens"] = token
-                if barn_user:
-                    query_args["url_username"] = barn_user
-                    query_args["force_basic_auth"] = True
-                if barn_password:
-                    query_args["url_password"] = barn_password
-                    query_args["force_basic_auth"] = True
-
                 resp = Request().open("PUT", "http://%s:%s/api/v1/inventory/hosts" %
                                       (barn_host, barn_port), **query_args)
                 result = json.loads(resp.read())
 
-            except urllib_error.HTTPError as e:
-                result["status"] = int(getattr(e, 'code', -1))
-                try:
-                    result = json.loads(e.read())
-                except AttributeError:
-                    result["status"] = 500
-                    result["error"] = "Can't parse API response to json response"
-            except timeout:
-                result["status"] = 500
-                result["error"] = "Connection timeout"
-            except Exception as e:
-                raise AnsibleActionFail(e)
+            elif state == "absent":        
+                data = dict(name=task_vars.get("inventory_hostname"))
+                query_args["data"] = json.dumps(data).encode('utf-8')
+                resp = Request().open("DELETE", "http://%s:%s/api/v1/inventory/hosts" %
+                                        (barn_host, barn_port), **query_args)
+                result = json.loads(resp.read())
 
-        elif state == "absent":
-            result["msg"] = "remove %s from barn (under construction)" % (
-                task_vars.get("inventory_hostname"))
+        except urllib_error.HTTPError as e:
+            result["status"] = int(getattr(e, 'code', -1))
+            try:
+                print(e.read())
+                result = json.loads(e.read())
+            except AttributeError:
+                result["status"] = 500
+                result["error"] = "Can't parse API response to json response"
+        except timeout:
+            result["status"] = 500
+            result["error"] = "Connection timeout"
+        except Exception as e:
+            raise AnsibleActionFail(e)
 
         return result
