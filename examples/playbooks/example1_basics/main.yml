@@ -29,7 +29,6 @@
         barn_password: "testpassword"
         # barn_token: "qmsdklfjqsdmlkfjqsdmlkfjqmsdlkfjqmlskdjf"
         barn_port: 5000
-        state: absent
         exclude: ip_address
         load_to_facts: True
       delegate_to: localhost
