@@ -14,17 +14,30 @@ DOCUMENTATION = r'''
 module: barn_read
 version_added: 2.9.9
 short_description: Read variables from Barn
+description:
+  - The M(barn_read) module reads variables from the barn server
+  - This task only has an action plugin. You can run the task even when no connection to the host is possible. 
 options:
   barn_host:
     description:
       - hostname or IP address of Barn server
+      - This option has been deprecated in favor of C(barn_url).
     type: str
     version_added: '2.9.9'
   barn_port:
     description:
       - Specific port for Barn server
+      - This option has been deprecated in favor of C(barn_url).
     type: str
     default: 443
+    version_added: '2.9.9'
+  barn_url:
+    description:
+      - Url of the barn host
+      - Module will default to B(https) when no protocol is defined
+      - "Examples: U(http://127.0.0.1:5000/), U(https://barn.myhomecloud.be), U(barn.myhomecloud.be)"
+    type: str
+    required: true
     version_added: '2.9.9'
   barn_user:
     description:
@@ -62,7 +75,7 @@ options:
 notes:
 - barn_read is an action plugin, without a module. 
 author:
-- Sander Descamps
+- Sander Descamps <sander_descamps@hotmail.com>
 '''
 
 EXAMPLES = r'''

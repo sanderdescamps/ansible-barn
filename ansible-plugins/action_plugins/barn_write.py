@@ -20,6 +20,11 @@ class ActionModule(ActionBase):
 
         barn_host = module_args.get("barn_host", None)
         barn_port = module_args.get("barn_port", 443)
+        barn_url = module_args.get("barn_url", None)
+        validate_certs = module_args.get("validate_certs", True)
+        if not barn_url and barn_host and barn_port:
+            barn_url = "https://{}:{}".format(barn_host, barn_port)
+            self._display.warning("The options barn_host and barn_port are deprecated. Please use barn_url instead.")
         barn_user = module_args.get("barn_user", None)
         barn_password = module_args.get("barn_password", None)
         token = module_args.get("barn_token", None)
@@ -31,6 +36,9 @@ class ActionModule(ActionBase):
             result['failed'] = True
             result['msg'] = "barn_host is required"
             return result
+        if not barn_url.startswith("https://") and not barn_url.startswith("http://"):
+            barn_url = "https://{}".format(barn_url)
+        barn_url = barn_url.rstrip("/")
         
         query_args = dict()
         query_args["headers"] = {'Content-type': 'application/json'}
@@ -65,28 +73,31 @@ class ActionModule(ActionBase):
 
                 
                 query_args["data"] = json.dumps(data).encode('utf-8')
-                resp = Request().open("PUT", "http://%s:%s/api/v1/inventory/hosts" %
-                                      (barn_host, barn_port), **query_args)
+                resp = Request().open("PUT", "{}/api/v1/inventory/hosts".format(barn_url), validate_certs=validate_certs, **query_args)
                 result = json.loads(resp.read())
 
             elif state == "absent":        
                 data = dict(name=task_vars.get("inventory_hostname"))
                 query_args["data"] = json.dumps(data).encode('utf-8')
-                resp = Request().open("DELETE", "http://%s:%s/api/v1/inventory/hosts" %
-                                        (barn_host, barn_port), **query_args)
+                resp = Request().open("DELETE", "{}/api/v1/inventory/hosts".format(barn_url), validate_certs=validate_certs, **query_args)
                 result = json.loads(resp.read())
 
         except urllib_error.HTTPError as e:
             result["status"] = int(getattr(e, 'code', -1))
             try:
-                print(e.read())
                 result = json.loads(e.read())
             except AttributeError:
                 result["status"] = 500
                 result["error"] = "Can't parse API response to json response"
+                result["failed"] = True
         except timeout:
-            result["status"] = 500
+            result["status"] = 503
             result["error"] = "Connection timeout"
+            result["failed"] = True
+        except urllib_error.URLError as e:
+            result["status"] = 503
+            result["error"] = "Can't connect to barn"
+            result["failed"] = True
         except Exception as e:
             raise AnsibleActionFail(e)
 

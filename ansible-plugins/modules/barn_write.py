@@ -14,6 +14,9 @@ DOCUMENTATION = r'''
 module: barn_write
 version_added: 2.9.9
 short_description: Make changes in Barn
+description:
+  - The M(barn_write) module manages the variables of a host inside Barn
+  - This task only has an action plugin. You can run the task even when no connection to the host is possible. 
 options:
   barn_host:
     description:
@@ -25,6 +28,14 @@ options:
       - Specific port for Barn server
     type: str
     default: 443
+    version_added: '2.9.9'
+  barn_url:
+    description:
+      - Url of the barn host
+      - Module will default to B(https) when no protocol is defined
+      - "Examples: U(http://127.0.0.1:5000/), U(https://barn.myhomecloud.be), U(barn.myhomecloud.be)"
+    type: str
+    required: true
     version_added: '2.9.9'
   barn_user:
     description:
@@ -51,7 +62,7 @@ options:
 notes:
 - barn_write is an action plugin, without a module. 
 author:
-- Sander Descamps
+- Sander Descamps <sander_descamps@hotmail.com>
 '''
 
 EXAMPLES = r'''
