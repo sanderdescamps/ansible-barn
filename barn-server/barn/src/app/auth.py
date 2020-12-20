@@ -1,8 +1,9 @@
 from functools import wraps
 import jwt
 from werkzeug.security import check_password_hash
-from flask import request, current_app, redirect, url_for
+from flask import request, current_app, redirect, url_for, abort
 from flask_login import LoginManager
+from flask_principal import Principal, identity_changed, identity_loaded, Identity, RoleNeed, Permission
 from app.models import User
 from app.utils.formater import ResponseFormater
 
@@ -87,13 +88,22 @@ def load_user_from_request(l_request):
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    schema = request.headers.get("X-Forwarded-Proto")
-    host = request.headers.get("X-Forwarded-Host")
-    port = request.headers.get("X-Forwarded-Port")
-    if schema and port and host:
-        return redirect("{}://{}:{}{}".format(schema, host, port, url_for("login.login", next=request.endpoint)))
+    auth = request.authorization
+    token = request.headers.get('x-access-tokens', None)
+    if not ((auth and auth.username and auth.password) or token):
+        if request.user_agent.browser:
+            schema = request.headers.get("X-Forwarded-Proto")
+            host = request.headers.get("X-Forwarded-Host")
+            port = request.headers.get("X-Forwarded-Port")
+            if schema and port and host:
+                return redirect("{}://{}:{}{}".format(schema, host, port, url_for("login.login", next=request.endpoint)))
+            else:
+                return redirect(url_for("login.login", next=request.endpoint))
+        else:
+            abort(401, description="Authentication required")
     else:
-        return redirect(url_for("login.login", next=request.endpoint))
+        abort(401, description="Authentication failed")
+
 @identity_loaded.connect
 def on_identity_loaded(sender, identity):
     # print(identity)

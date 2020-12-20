@@ -14,6 +14,8 @@ from app.blueprints.inventory_export import inventory_pages
 from app.blueprints.debug import debug_pages
 from app.blueprints.upload import upload_pages
 from app.blueprints.login import login_pages
+from app.blueprints.error import *
+from werkzeug.exceptions import NotFound, Unauthorized
 from app.models import User
 
 
@@ -136,7 +138,8 @@ class BarnServer(Flask):
         self.register_blueprint(export_pages)
         self.register_blueprint(upload_pages)
         self.register_blueprint(login_pages)
+        self.register_error_handler(NotFound, handle_bad_request)
+        self.register_error_handler(Unauthorized, handle_authentication_failed)
         if self.config.get("BARN_CONFIG", {}).get("debug_mode", False):
             self.register_blueprint(debug_pages)
     
-
