@@ -1,25 +1,24 @@
 from flask import Blueprint, jsonify, current_app
 from flask_login import login_required
-from app.models import Group, Role, Host, User
+from app.models import Group, Host, User
 
 
 
 debug_pages = Blueprint('debug', __name__)
 
 
-@debug_pages.route('/init', methods=['PUT'])
+@debug_pages.route('/init', methods=['PUT', 'GET'])
 @login_required
 def init():
-    Role.objects(name__not__iexact="admin").delete()
-    Role(name="admin", description="Allow anything")
-    Role(name="addHost", description="Add a host to the inventory").save()
-    Role(name="addGroup", description="Add a group to the inventory").save()
-    Role(name="readOnly", description="Read access on inventory").save()
-    Role(name="query", description="Read access on inventory").save()
+    # Role.objects(name__not__iexact="admin").delete()
+    # Role(name="admin", description="Allow anything")
+    # Role(name="addHost", description="Add a host to the inventory").save()
+    # Role(name="addGroup", description="Add a group to the inventory").save()
+    # Role(name="readOnly", description="Read access on inventory").save()
+    # Role(name="query", description="Read access on inventory").save()
 
     User.objects(name__not__iexact=current_app.config.get('BARN_CONFIG').get("barn_init_admin_user")).delete()
-    user_1 = User(name="Sander Descamps", username="sdescamps",
-                  password="testpassword", roles=["admin"])
+    user_1 = User(name="Sander Descamps", username="sdescamps", password="testpassword", admin=True, roles=["test"])
     user_1.save()
 
     Host.objects().delete()
