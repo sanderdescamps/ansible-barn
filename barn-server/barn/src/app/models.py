@@ -3,28 +3,35 @@ from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
 from flask_login.mixins import UserMixin
+from flask_principal import Need, RoleNeed
 
-class Role(Document):
-    name = StringField(required=True)
-    description = StringField()
 
-    def __unicode__(self):
-        return self.name
 
-    def __repr__(self):
-        return str(self.name)
+# class Role(Document):
+#     name = StringField(required=True)
+#     description = StringField()
+#     # methode = StringField(required=True)
 
-    def __str__(self):
-        return str(self.name)
+#     def __unicode__(self):
+#         return self.name
 
-    def __eq__(self, other):
-        if other.__class__ == str:
-            return str(self.name).lower() == other.lower()
-        else:
-            return (
-                self.__class__ == other.__class__ and
-                str(self.name).lower() == str(other.name).lower()
-            )
+#     def __repr__(self):
+#         return str(self.name)
+
+#     def __str__(self):
+#         return str(self.name)
+
+#     def __eq__(self, other):
+#         if other.__class__ == str:
+#             return str(self.name).lower() == other.lower()
+#         else:
+#             return (
+#                 self.__class__ == other.__class__ and
+#                 str(self.name).lower() == str(other.name).lower()
+#             )
+
+#     def to_tuple(self):
+#         return RoleNeed(**{'value':self.name})
 
 
 class User(Document, UserMixin):
@@ -32,30 +39,33 @@ class User(Document, UserMixin):
     name = StringField()
     username = StringField(required=True, unique=True)
     password_hash = StringField()
-    roles = ListField(ReferenceField(Role))
+    roles = ListField(default=[])
     active = BooleanField(default=True)
 
     def __init__(self, *args, **kwargs):
+        print("username: {}  roles input {}".format(kwargs.get("username","None"), str(kwargs.get("roles","None"))))
         if "password" in kwargs and kwargs.get("password") is not None:
             kwargs["password_hash"] = generate_password_hash(
                 kwargs.pop("password"), method='sha256')
-        if "roles" in kwargs:
-            roles = kwargs.pop("roles")
-            o_roles = []
-            if isinstance(roles, str):
-                roles = roles.split(",")
-            for role in roles:
-                if isinstance(role, str):
-                    o_role = Role.objects(name=role).first()
-                    if o_role:
-                        o_roles.append(o_role)
-                elif isinstance(role, Role):
-                    o_roles.append(role)
-            kwargs["roles"] = o_roles
+        # if "roles" in kwargs:
+        #     roles = kwargs.pop("roles")
+        #     o_roles = []
+        #     if isinstance(roles, str):
+        #         roles = roles.split(",")
+            
+        #     for role in roles:
+        #         if isinstance(role, str):
+        #             o_role = Role.objects(name=role).first()
+        #             if o_role:
+        #                 o_roles.append(o_role)
+        #         elif isinstance(role, Role):
+        #             o_roles.append(role)
+        #     kwargs["roles"] = o_roles
         if kwargs.pop("admin", False):
-            o_admin = Role.objects(name__iexact="admin").first()
-            kwargs["roles"] = kwargs.get("roles",[]).append(o_admin)
-        super(User, self).__init__(*args, **kwargs)
+            # o_admin = Role.objects(name__iexact="admin").first()
+            # kwargs["roles"] = kwargs.get("roles",[]).append(o_admin)
+            kwargs["roles"] = kwargs.get("roles", []) + ["admin"]
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return '<User %r>' % (self.name)
@@ -65,6 +75,9 @@ class User(Document, UserMixin):
 
     def has_role(self, role):
         return role in self.roles
+
+    def get_roles(self):
+        return [RoleNeed(**{'value':role}) for role in self.roles]
 
     def isadmin(self):
         if self.roles is not None and "admin" in self.roles:

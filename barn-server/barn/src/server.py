@@ -1,7 +1,7 @@
 import os
 import sys
 from app.BarnServer import BarnServer
-from app.auth import login_manager
+from app.auth import login_manager, principals
 from flask_mongoengine import MongoEngine
 from waitress import serve
 
@@ -27,10 +27,9 @@ if __name__ == "__main__":
     # user_datastore = MongoEngineUserDatastore(db, User, Role)
     # security = Security(app, user_datastore)
     login_manager.init_app(app)
-
-
-
+    principals.init_app(app)
 
 
     # serve(app, host='0.0.0.0', port=5000, threads=4)
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+    

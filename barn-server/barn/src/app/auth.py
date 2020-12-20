@@ -52,6 +52,10 @@ def authenticate(*roles):
 login_manager = LoginManager()
 login_manager.login_view = "/login"
 
+principals = Principal()
+admin_permission = Permission(RoleNeed('admin'))
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.objects(public_id=user_id).first()
@@ -66,6 +70,7 @@ def load_user_from_request(l_request):
         try:
             check_user = User.objects(public_id=data.get("public_id")).first()
             if check_user:
+                identity_changed.send(current_app._get_current_object(),identity=Identity(check_user.public_id))
                 return check_user
         except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
             pass
@@ -75,6 +80,7 @@ def load_user_from_request(l_request):
     elif auth and auth.username and auth.password:
         check_user = User.objects(username=auth.username).first()
         if check_password_hash(check_user.password_hash, auth.password):
+            identity_changed.send(current_app._get_current_object(),identity=Identity(check_user.public_id))
             return check_user
 
     return None
@@ -88,3 +94,11 @@ def unauthorized():
         return redirect("{}://{}:{}{}".format(schema, host, port, url_for("login.login", next=request.endpoint)))
     else:
         return redirect(url_for("login.login", next=request.endpoint))
+@identity_loaded.connect
+def on_identity_loaded(sender, identity):
+    # print(identity)
+    o_user = User.objects(public_id=identity.id).first()
+    if o_user:
+        # print(o_user.get_roles())
+        for role in o_user.get_roles():
+            identity.provides.add(role)

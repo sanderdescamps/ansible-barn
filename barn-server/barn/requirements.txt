@@ -7,3 +7,4 @@ flask-swagger
 flask-swagger-ui
 waitress
 flask-login
+Flask-Principal
