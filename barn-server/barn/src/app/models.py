@@ -1,3 +1,4 @@
+import logging
 import uuid
 from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
@@ -43,7 +44,6 @@ class User(Document, UserMixin):
     active = BooleanField(default=True)
 
     def __init__(self, *args, **kwargs):
-        print("username: {}  roles input {}".format(kwargs.get("username","None"), str(kwargs.get("roles","None"))))
         if "password" in kwargs and kwargs.get("password") is not None:
             kwargs["password_hash"] = generate_password_hash(
                 kwargs.pop("password"), method='sha256')
