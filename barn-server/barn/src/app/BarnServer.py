@@ -3,7 +3,9 @@ import sys
 import random
 import string
 import configparser
+import logging
 from flask import Flask
+from flask.logging import default_handler
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.blueprints.admin.users import user_pages
 from app.blueprints.admin.export import export_pages
@@ -15,7 +17,8 @@ from app.blueprints.debug import debug_pages
 from app.blueprints.upload import upload_pages
 from app.blueprints.login import login_pages
 from app.blueprints.error import *
-from werkzeug.exceptions import NotFound, Unauthorized
+from werkzeug.exceptions import NotFound, Unauthorized, InternalServerError
+from pymongo.errors import ServerSelectionTimeoutError
 from app.models import User
 
 
@@ -39,14 +42,16 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
 
 class BarnServer(Flask):
     def __init__(self, config_path, **kwargs):
-        self.logger = None
-        super(BarnServer, self).__init__(__name__,**kwargs)
+        super().__init__(__name__,**kwargs)
         self.load_config_file(config_path)
         self._register_blueprints()
+        self._register_error_handlers()
+
         # self.db = MongoEngine()
         # self.db.init_app(self)
         # self.user_datastore = MongoEngineUserDatastore(self.db, User, Role)
         # self.security = Security(self, self.user_datastore)
+
         
 
 
@@ -67,18 +72,18 @@ class BarnServer(Flask):
             for required_setting in ["mongo_user","mongo_password","mongo_host","mongo_port","mongo_db"]:
                 if not config.get("mongodb",{}).get(required_setting):
                     valid_config = False
-                    self.logger.error("{} has no {} setting in the mongo section".format(path, required_setting))   
+                    logging.getLogger().error("{} has no {} setting in the mongo section".format(path, required_setting))   
         else:
             valid_config = False
-            self.logger.error("{} has no mongo settings".format(path))
+            logging.getLogger().error("{} has no mongo settings".format(path))
         #Verify Barn Configuration
         if "barn" in config:
             if "barn_token_encryption_key" not in config.get("barn",{}):
                 valid_config = False
-                self.logger.error("{} has no {} in the barn section".format(path,"barn_token_encryption_key"))
+                logging.getLogger().error("{} has no {} in the barn section".format(path,"barn_token_encryption_key"))
         else:
             valid_config = False
-            self.logger.error("{} has no barn settings".format(path))
+            logging.getLogger().error("{} has no barn settings".format(path))
 
         if valid_config:
             self.config.from_mapping(dict(
@@ -94,18 +99,22 @@ class BarnServer(Flask):
         else:
             sys.exit("Invalid config file")
 
-    def _db_init(self):
-        if not User.objects(name=self.get_barn_config("barn_init_admin_user")).first():
+    def create_admin_user(self):
+        """
+            Create admin user if not exist
+        """
+        if not User.objects(username=self.get_barn_config("barn_init_admin_user")).first():
             User(
                 name=self.get_barn_config("barn_init_admin_user"),
                 username=self.get_barn_config("barn_init_admin_user"),
                 password=self.get_barn_config("barn_init_admin_password"),
                 admin=True
             ).save()
+            logging.info("Create admin user")
 
     def get_barn_config(self, key):
         default_value = DEFAULT_BARN_CONFIG.get(key)
-        self.config.get("BARN_CONFIG", {}).get(key,default_value)        
+        return self.config.get("BARN_CONFIG", {}).get(key,default_value)        
 
     @classmethod
     def _load_ini_config_file(cls,path):
@@ -138,8 +147,14 @@ class BarnServer(Flask):
         self.register_blueprint(export_pages)
         self.register_blueprint(upload_pages)
         self.register_blueprint(login_pages)
-        self.register_error_handler(NotFound, handle_bad_request)
-        self.register_error_handler(Unauthorized, handle_authentication_failed)
         if self.config.get("BARN_CONFIG", {}).get("debug_mode", False):
             self.register_blueprint(debug_pages)
+    
+    def _register_error_handlers(self):
+        self.register_error_handler(NotFound, handle_bad_request)
+        self.register_error_handler(Unauthorized, handle_authentication_failed)
+        self.register_error_handler(InternalServerError, handle_internal_server_error)
+        self.register_error_handler(ServerSelectionTimeoutError, handle_mongodb_unreachable)
+        self.register_error_handler(Exception, pokemon_exception_handler)
+
     

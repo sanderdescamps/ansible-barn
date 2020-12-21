@@ -67,22 +67,26 @@ def load_user_from_request(l_request):
     token = l_request.headers.get('x-access-tokens', None)
 
     if token is not None and token != "":
-        data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
         try:
+            data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
             check_user = User.objects(public_id=data.get("public_id")).first()
             if check_user:
-                identity_changed.send(current_app._get_current_object(),identity=Identity(check_user.public_id))
+                identity_changed.send(current_app._get_current_object(), identity=Identity(check_user.public_id))
+                logging.getLogger().info("Auth: User %s logged in with token", check_user.username)
                 return check_user
         except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
-            pass
+            logging.getLogger().info("Auth: Invalid token: {}".format(token))
         except jwt.exceptions.ExpiredSignatureError:
-            pass
+            logging.getLogger().info("Auth: Token expired: {}".format(token))
 
     elif auth and auth.username and auth.password:
         check_user = User.objects(username=auth.username).first()
         if check_password_hash(check_user.password_hash, auth.password):
-            identity_changed.send(current_app._get_current_object(),identity=Identity(check_user.public_id))
+            identity_changed.send(current_app._get_current_object(), identity=Identity(check_user.public_id))
+            logging.getLogger().info("Auth: User %s logged in", check_user.username)
             return check_user
+        else:
+            logging.getLogger().info("Auth: User %s failed to login", check_user.username)
 
     return None
 
@@ -106,9 +110,7 @@ def unauthorized():
 
 @identity_loaded.connect
 def on_identity_loaded(sender, identity):
-    # print(identity)
     o_user = User.objects(public_id=identity.id).first()
     if o_user:
-        # print(o_user.get_roles())
         for role in o_user.get_roles():
             identity.provides.add(role)
