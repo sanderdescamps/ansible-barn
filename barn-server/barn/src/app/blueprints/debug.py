@@ -1,6 +1,8 @@
+import logging
 from flask import Blueprint, jsonify, current_app
 from flask_login import login_required
 from app.models import Group, Host, User
+from app.auth import admin_permission
 
 
 
@@ -47,3 +49,15 @@ def flush():
     Host.objects().delete()
     Group.objects().delete()
     return jsonify({'message': 'Database has been flushed'})
+
+
+@debug_pages.route('/test', methods=['GET', 'POST'])
+@login_required
+@admin_permission.require(http_exception=403)
+def test():
+    logging.getLogger().critical("critical message")
+    logging.getLogger().warning("warning message")
+    logging.getLogger().info("info message")
+    logging.getLogger().debug("debug message")
+    print(None.test)
+    return jsonify(dict(msg="it works"))

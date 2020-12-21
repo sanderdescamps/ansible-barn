@@ -1,6 +1,7 @@
 from flask import request, jsonify, Blueprint, redirect, url_for, Response, abort
 from flask_login import logout_user, login_required, current_user
 from app.auth import admin_permission
+import logging
 
 
 
@@ -27,9 +28,5 @@ def logout():
     logout_user()
     return jsonify(dict(msg="logout")), 401
 
-@login_pages.route('/test', methods=['GET', 'POST'])
-@login_required
-@admin_permission.require(http_exception=403)
-def test():
-    return jsonify(dict(msg="it works"))
+
 
