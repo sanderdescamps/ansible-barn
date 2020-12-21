@@ -1,10 +1,9 @@
-import logging
 import uuid
 from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
 from flask_login.mixins import UserMixin
-from flask_principal import Need, RoleNeed
+from flask_principal import RoleNeed
 
 
 

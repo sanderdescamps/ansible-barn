@@ -5,7 +5,7 @@ from flask import jsonify, make_response
 #400
 def handle_bad_request(e):
     data = dict(
-        msg="Bad request",
+        msg=e.description if hasattr(e, 'description') else "Bad request",
         status=400,
     )
     return jsonify(data), 400
@@ -29,7 +29,7 @@ def handle_internal_server_error(e):
     return make_response(jsonify(data), 500)
 
 # MongoDB error
-def handle_mongodb_unreachable(e):
+def handle_mongodb_unreachable(_):
     logging.getLogger().error("MongoDB unreachable")
     data = dict(
         msg="Can't connect to MongoDB",
@@ -40,7 +40,7 @@ def handle_mongodb_unreachable(e):
 #Catch them all
 def pokemon_exception_handler(e):
     track = traceback.format_exc()
-    logging.getLogger().error("Unknown Exception\n%s",track)
+    logging.getLogger().error("Unknown Exception\n%s", track)
     data = dict(
         msg=e.description if hasattr(e, 'description') else "Unknown Exception, check the logs for more details",
         status=500

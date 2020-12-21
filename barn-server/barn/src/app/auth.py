@@ -74,9 +74,9 @@ def load_user_from_request(l_request):
                 logging.getLogger().info("Auth: User %s logged in with token", check_user.username)
                 return check_user
         except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
-            logging.getLogger().info("Auth: Invalid token: {}".format(token))
+            logging.getLogger().info("Auth: Invalid token: %s", token)
         except jwt.exceptions.ExpiredSignatureError:
-            logging.getLogger().info("Auth: Token expired: {}".format(token))
+            logging.getLogger().info("Auth: Token expired: %s", token)
 
     elif auth and auth.username and auth.password:
         check_user = User.objects(username=auth.username).first()

@@ -5,7 +5,6 @@ import string
 import configparser
 import logging
 from flask import Flask
-from flask.logging import default_handler
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.blueprints.admin.users import user_pages
 from app.blueprints.admin.export import export_pages
@@ -16,13 +15,13 @@ from app.blueprints.inventory_export import inventory_pages
 from app.blueprints.debug import debug_pages
 from app.blueprints.upload import upload_pages
 from app.blueprints.login import login_pages
-from app.blueprints.error import *
+from app.blueprints.error import handle_authentication_failed, handle_bad_request, handle_internal_server_error, handle_mongodb_unreachable, pokemon_exception_handler
 from werkzeug.exceptions import NotFound, Unauthorized, InternalServerError
 from pymongo.errors import ServerSelectionTimeoutError
 from app.models import User
 
 
-DEFAULT_BARN_CONFIG={
+DEFAULT_BARN_CONFIG = {
     "barn_init_admin_user": "admin",
     "barn_init_admin_password": "admin",
     "debug_mode": False
@@ -40,9 +39,10 @@ SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
         'layout': "BaseLayout"
     })
 
+
 class BarnServer(Flask):
     def __init__(self, config_path, **kwargs):
-        super().__init__(__name__,**kwargs)
+        super().__init__(__name__, **kwargs)
         self.load_config_file(config_path)
         self._register_blueprints()
         self._register_error_handlers()
@@ -52,10 +52,7 @@ class BarnServer(Flask):
         # self.user_datastore = MongoEngineUserDatastore(self.db, User, Role)
         # self.security = Security(self, self.user_datastore)
 
-        
-
-
-    def load_config_file(self,path):
+    def load_config_file(self, path):
         config = None
         if path.endswith(".ini") or path.endswith(".cfg"):
             config = BarnServer._load_ini_config_file(path)
@@ -63,39 +60,44 @@ class BarnServer(Flask):
             sys.exit("Could not load config file. Only allow .ini or .cfg files")
 
         # Session key
-        default_random_key = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(32))
-        self.secret_key = config.get("barn",{}).get("barn_session_key",default_random_key)
+        default_random_key = ''.join(random.choice(
+            string.ascii_letters + string.digits) for i in range(32))
+        self.secret_key = config.get("barn", {}).get(
+            "barn_session_key", default_random_key)
 
-        #Verify MongoDB Configuration
+        # Verify MongoDB Configuration
         valid_config = True
         if "mongodb" in config:
-            for required_setting in ["mongo_user","mongo_password","mongo_host","mongo_port","mongo_db"]:
-                if not config.get("mongodb",{}).get(required_setting):
+            for required_setting in ["mongo_user", "mongo_password", "mongo_host", "mongo_port", "mongo_db"]:
+                if not config.get("mongodb", {}).get(required_setting):
                     valid_config = False
-                    logging.getLogger().error("{} has no {} setting in the mongo section".format(path, required_setting))   
+                    logging.getLogger().error(
+                        "%s has no %s setting in the mongo section", path, required_setting)
         else:
             valid_config = False
-            logging.getLogger().error("{} has no mongo settings".format(path))
-        #Verify Barn Configuration
+            logging.getLogger().error("%s has no mongo settings", path)
+        # Verify Barn Configuration
         if "barn" in config:
-            if "barn_token_encryption_key" not in config.get("barn",{}):
+            if "barn_token_encryption_key" not in config.get("barn", {}):
                 valid_config = False
-                logging.getLogger().error("{} has no {} in the barn section".format(path,"barn_token_encryption_key"))
+                logging.getLogger().error("%s has no %s in the barn section",
+                                          path, "barn_token_encryption_key")
         else:
             valid_config = False
-            logging.getLogger().error("{} has no barn settings".format(path))
+            logging.getLogger().error("%s has no barn settings", path)
 
         if valid_config:
             self.config.from_mapping(dict(
                 BARN_CONFIG=config.get("barn"),
-                TOKEN_ENCRYPTION_KEY=config.get("barn",{}).get("barn_token_encryption_key"),
+                TOKEN_ENCRYPTION_KEY=config.get("barn", {}).get(
+                    "barn_token_encryption_key"),
                 MONGODB_SETTINGS=dict(
-                    db=config.get("mongodb",{}).get("mongo_db"),
-                    host=config.get("mongodb",{}).get("mongo_host"),
-                    username=config.get("mongodb",{}).get("mongo_user"),
-                    password=config.get("mongodb",{}).get("mongo_password"),
+                    db=config.get("mongodb", {}).get("mongo_db"),
+                    host=config.get("mongodb", {}).get("mongo_host"),
+                    username=config.get("mongodb", {}).get("mongo_user"),
+                    password=config.get("mongodb", {}).get("mongo_password"),
                     authentication_source="admin"
-            )))
+                )))
         else:
             sys.exit("Invalid config file")
 
@@ -114,10 +116,10 @@ class BarnServer(Flask):
 
     def get_barn_config(self, key):
         default_value = DEFAULT_BARN_CONFIG.get(key)
-        return self.config.get("BARN_CONFIG", {}).get(key,default_value)        
+        return self.config.get("BARN_CONFIG", {}).get(key, default_value)
 
     @classmethod
-    def _load_ini_config_file(cls,path):
+    def _load_ini_config_file(cls, path):
         result = {}
         if os.path.isfile(path):
             config = configparser.ConfigParser()
@@ -149,12 +151,12 @@ class BarnServer(Flask):
         self.register_blueprint(login_pages)
         if self.config.get("BARN_CONFIG", {}).get("debug_mode", False):
             self.register_blueprint(debug_pages)
-    
+
     def _register_error_handlers(self):
         self.register_error_handler(NotFound, handle_bad_request)
         self.register_error_handler(Unauthorized, handle_authentication_failed)
-        self.register_error_handler(InternalServerError, handle_internal_server_error)
-        self.register_error_handler(ServerSelectionTimeoutError, handle_mongodb_unreachable)
+        self.register_error_handler(
+            InternalServerError, handle_internal_server_error)
+        self.register_error_handler(
+            ServerSelectionTimeoutError, handle_mongodb_unreachable)
         self.register_error_handler(Exception, pokemon_exception_handler)
-
-    
