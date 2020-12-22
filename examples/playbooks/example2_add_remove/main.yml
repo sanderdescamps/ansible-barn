@@ -9,7 +9,8 @@
         barn_host: "127.0.0.1"
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        barn_port: 5000
+        barn_port: 443
+        validate_certs: False
         state: present
         vars: 
           test: sdqf
@@ -24,10 +25,10 @@
     
     - name: barn read
       barn_read:
-        barn_host: "127.0.0.1"
+        barn_url: "https://127.0.0.1:443"
+        validate_certs: False
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        barn_port: 5000
       delegate_to: localhost
       register: output
 
@@ -40,7 +41,8 @@
         barn_host: "127.0.0.1"
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        barn_port: 5000
+        validate_certs: False
+        barn_port: 443
         state: absent
       register: output 
 
