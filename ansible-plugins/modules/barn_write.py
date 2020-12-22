@@ -29,6 +29,13 @@ options:
     type: str
     default: 443
     version_added: '2.9.9'
+  barn_https:
+    description:
+      - Use B(https) if true
+      - This option has been deprecated in favor of C(barn_url).
+    type: bool
+    default: true
+    version_added: '2.9.9'
   barn_url:
     description:
       - Url of the barn host
@@ -36,6 +43,12 @@ options:
       - "Examples: U(http://127.0.0.1:5000/), U(https://barn.myhomecloud.be), U(barn.myhomecloud.be)"
     type: str
     required: true
+    version_added: '2.9.9'
+  validate_certs:
+    description:
+      - Validate the ssl certificate 
+    type: bool
+    default: true
     version_added: '2.9.9'
   barn_user:
     description:
