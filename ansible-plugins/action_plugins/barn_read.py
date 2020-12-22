@@ -46,7 +46,10 @@ class ActionModule(ActionBase):
             result['msg'] = "barn_host is required"
             return result
 
-        query_args = dict()
+        query_args = dict(
+            follow_redirects=True,
+            validate_certs=validate_certs
+            )
         query_args["headers"] = {'Content-type': 'application/json'}
         if token:
             query_args["headers"]["x-access-tokens"] = token
@@ -65,8 +68,7 @@ class ActionModule(ActionBase):
             query_args["data"] = json.dumps(data).encode('utf-8')
             self._display.vvv(
                 "POST {}/api/v1/inventory/hosts".format(barn_url))
-            r = Request().open("POST", "{}/api/v1/inventory/hosts".format(barn_url),
-                               validate_certs=validate_certs, **query_args)
+            r = Request().open("POST", "{}/api/v1/inventory/hosts".format(barn_url), **query_args)
             barn_resp = json.loads(r.read())
             self._display.vvv("Response form Barn: %s" % (barn_resp))
             barn_vars = barn_resp.get(

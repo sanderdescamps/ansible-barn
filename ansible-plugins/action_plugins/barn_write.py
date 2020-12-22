@@ -44,7 +44,7 @@ class ActionModule(ActionBase):
             result['msg'] = "barn_host is required"
             return result
 
-        query_args = dict()
+        query_args = dict(follow_redirects=True)
         query_args["headers"] = {'Content-type': 'application/json'}
         if token:
             query_args["headers"]["x-access-tokens"] = token
