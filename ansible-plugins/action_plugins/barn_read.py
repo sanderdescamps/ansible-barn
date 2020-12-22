@@ -89,16 +89,21 @@ class ActionModule(ActionBase):
                 result = json.loads(e.read())
             except AttributeError:
                 result["status"] = 500
-                result["error"] = "Can't parse API response to json response"
+                result["msg"] = "Can't parse API response to json response"
                 result["failed"] = True
         except timeout:
             result["status"] = 503
-            result["error"] = "Connection timeout"
+            result["msg"] = "Connection timeout"
             result["failed"] = True
-        except urllib_error.URLError as e:
+        except urllib_error.URLError as e: #SSL_cert_verificate_error
+            result["status"] = int(e.code) if hasattr(e, 'code') else 503
+            result["msg"] = str(e.reason) if hasattr(e, 'reason') else "Can't connect to barn"
+            result["failed"] = True
+        except urllib_error as e:
             result["status"] = 503
-            result["error"] = "Can't connect to barn"
+            result["msg"] = e.description if hasattr(e, 'description') else "Can't connect to barn"
             result["failed"] = True
+
         except Exception as e:
             raise AnsibleActionFail(e)
 
