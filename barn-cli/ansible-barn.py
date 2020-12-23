@@ -5,6 +5,8 @@ import json
 import yaml
 import click
 from ansible.module_utils.urls import Request, urllib_error
+from ansible.utils.vars import merge_hash
+from ansible.config.manager import ensure_type
 
 
 BARN_CONFIG_PATHS = [
@@ -19,16 +21,35 @@ BARN_CONFIG_PATHS = [
     os.path.join("/etc/barn/", "barn.json")
 ]
 
+BARN_CONFIG_PATHS = [
+    [
+        os.path.join(os.getcwd(), "barn.yml"),
+        os.path.join(os.getcwd(), "barn.yaml"),
+        os.path.join(os.getcwd(), "barn.json")
+    ], [
+        os.path.join(os.path.expanduser("~"), ".barn.yml"),
+        os.path.join(os.path.expanduser("~"), ".barn.yaml"),
+        os.path.join(os.path.expanduser("~"), ".barn.json")
+    ], [
+        os.path.join("/etc/barn/", "barn.yml"),
+        os.path.join("/etc/barn/", "barn.yaml"),
+        os.path.join("/etc/barn/", "barn.json")
+    ]
+]
 
 class Barn(object):
-    def __init__(self, url=None, user=None, password=None, token=None):
+    def __init__(self, url=None, user=None, password=None, token=None, validate_certs=True):
         self.barn_url = url
         self.barn_user = user
         self.barn_password = password
         self.barn_token = token
+        self.validate_certs = validate_certs
 
     def request(self, method, path, headers=None, data=None):
-        query_args = dict()
+        query_args = dict(
+            follow_redirects=True,
+            validate_certs=self.validate_certs
+        )
         headers = headers if headers is not  None else {}
         data = data if data is not None else {}
         headers.update({'Content-type': 'application/json'})
@@ -44,6 +65,7 @@ class Barn(object):
 
         result = None
         try:
+            click.echo("open request to %s/%s" %(self.barn_url, path.lstrip('/')))
             r = Request().open(method.upper(), "%s/%s" %
                                (self.barn_url, path.lstrip('/')), **query_args)
             result = json.loads(r.read())
@@ -53,7 +75,8 @@ class Barn(object):
 
     def __str__(self):
         output = dict(
-            barn_url=self.barn_url
+            barn_url=self.barn_url,
+            validate_certs = self.validate_certs
         )
         if self.barn_user and self.barn_password:
             output["barn_user"] = self.barn_user
@@ -62,46 +85,52 @@ class Barn(object):
             output["barn_token"] = self.barn_token
         return str(output)
 
+
     @classmethod
-    def from_config_file(cls, path):
+    def from_config(cls, config):
         """
             plugin: barn
+            barn_url: https://barn.example.com
             barn_user: sdescamps
             barn_password: testpassword
-            barn_hostname: 127.0.0.1
-            barn_port: 5000
+            #barn_hostname: 127.0.0.1
+            #barn_port: 5000
+            #barn_https: true
             fetch_variables: false
         """
-        config = None
-        try:
-            if path.endswith(".yml") or path.endswith(".yaml"):
-                with open(path, "rb") as file:
-                    config = yaml.load(file, Loader=yaml.FullLoader)
-            elif path.endswith(".json"):
-                with open(path, "rb") as file:
-                    config = json.load(file)
-        except Exception:
-            click.echo("Can not load %s" % (path))
-            config = None
-        if config:
-            if not config.get("barn_url") and config.get("barn_hostname") and config.get("barn_port"):
-                if str(config.get("barn_port")) == "5000":
-                    config["barn_url"] = "http://%s:%s" % (
-                        config.get("barn_hostname"), config.get("barn_port"))
-                else:
-                    config["barn_url"] = "https://%s:%s" % (
-                        config.get("barn_hostname"), config.get("barn_port"))
-            return Barn(
-                url=config.get("barn_url", None),
-                user=config.get("barn_user", None),
-                password=config.get("barn_password", None),
-                token=config.get("barn_token", None)
-            )
-        return None
+
+        barn_user = config.get("barn_user", None)
+        barn_password = config.get("barn_password", None)
+        barn_token = config.get("barn_token", None)
+        barn_url = config.get("barn_url", None)
+        barn_host = config.get("barn_host", config.get("barn_hostname", None))
+        barn_port = config.get("barn_port", None)
+        barn_https = ensure_type(config.get("barn_https", True), 'bool')
+        validate_certs = config.get("validate_certs", True)
+
+        if not barn_url and barn_host and barn_port:
+            protocol = "https" if barn_https else "http"
+            barn_url = "{}://{}:{}".format(protocol, barn_host, barn_port)
+        elif barn_url and not barn_url.startswith("https://") and not barn_url.startswith("http://"):
+            protocol = "http" if "barn_https" in config and not barn_https else "https"
+            barn_url = "{}://{}".format(protocol, barn_url)
+        barn_url = barn_url.rstrip("/")
+
+        return Barn(
+            url=barn_url,
+            user=barn_user,
+            password=barn_password,
+            token=barn_token,
+            validate_certs=validate_certs
+        )
+
+
 
 
 class BarnContext(dict):
     pass
+pass_barn_context = click.make_pass_decorator(BarnContext)
+
 class BarnOutputFormatter(object):
     """
     docstring
@@ -173,8 +202,26 @@ class BarnOutputFormatter(object):
     def to_yaml(self, indent=4):
         return yaml.dump(self._response, indent=indent)
 
+def _load_barn_config_file(path):
+    barn_vars = {}
+    try:
+        with open(path,'r') as file:
+            barn_vars = yaml.load(file, Loader=yaml.FullLoader)
+    except yaml.YAMLError as e:
+        msg = getattr(e, 'problem') if hasattr(e, 'problem') else "unknown problem"
+        click.secho("Failed to load config: {} ({})".format(path, msg), fg="red")
+    return barn_vars
 
-pass_barn_context = click.make_pass_decorator(BarnContext)
+def _load_barn_system_config():
+    barn_vars = {}
+    for path_set in BARN_CONFIG_PATHS:
+        for path in path_set:
+            if os.path.exists(path):
+                barn_vars = merge_hash(_load_barn_config_file(path), barn_vars)
+                break
+    return barn_vars
+
+
 
 
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
@@ -184,34 +231,36 @@ pass_barn_context = click.make_pass_decorator(BarnContext)
 @click.option('-p', '--barn-password', '--password', help='Password to authenticate against barn')
 @click.option('-h', '--barn-url', '--url', help='Barn url', show_default=True)
 @click.option('-t', '--barn-token', '--token', help='Barn authentication token')
+@click.option('-c', '--config-file', help='path to config file')
 @click.pass_context
 def main(ctx=None, **kwargs):
-    barn = None
-    for path in BARN_CONFIG_PATHS:
-        if os.path.exists(path):
-            barn = Barn.from_config_file(path)
-            break
+    barn_vars = None
+    if "config-file" in kwargs:
+        barn_vars = _load_barn_config_file(kwargs.get("config-file"))
+    else:
+        barn_vars = _load_barn_system_config()
 
     barn_user = kwargs.get("barn_user", None)
     if barn_user:
-        barn.barn_user = barn_user
+        barn_vars["barn_user"] = barn_user
     elif kwargs.get("ask_barn_user"):
-        barn.barn_user = click.prompt('Barn username', type=str)
+        barn_vars["barn_user"] = click.prompt('Barn username', type=str)
 
     barn_password = kwargs.get("barn_password", None)
     if barn_password:
-        barn.barn_password = barn_password
+        barn_vars["barn_password"] = barn_password
     elif kwargs.get("ask_barn_password"):
-        barn.barn_password = click.prompt(
+        barn_vars["barn_password"] = click.prompt(
             'Barn password', hide_input=True, type=str)
 
     barn_url = kwargs.get("barn_url")
     if barn_url:
-        barn.barn_url = barn_url
+        barn_vars["barn_url"] = barn_url
+    
     barn_token = kwargs.get("barn_token")
     if barn_token:
-        barn.barn_token = barn_token
-
+        barn_vars["barn_token"] = barn_token
+    barn = Barn.from_config(barn_vars)
     ctx.obj = BarnContext(barn=barn)
 
 
@@ -391,8 +440,8 @@ def delete_host(barn_context=None, name=None, **kwargs):
 @main.command(name="test", context_settings=dict(ignore_unknown_options=True))
 @pass_barn_context
 def test(barn_context=None, **kwargs):
-    print(kwargs)
-    print(barn_context.get("barn"))
+    print("kwargs: {}".format(kwargs))
+    print("barn: {}".format(barn_context.get("barn")))
 
 
 @main.command()
