@@ -102,6 +102,76 @@ class Barn(object):
 
 class BarnContext(dict):
     pass
+class BarnOutputFormatter(object):
+    """
+    docstring
+    """
+    def __init__(self):
+        self._response = None
+        self._msg = []
+
+    @classmethod
+    def from_response(cls, response):
+        formatter = BarnOutputFormatter()
+        
+        try:
+            return BarnOutputFormatter.from_dict(json.loads(response.read())) 
+        except json.JSONDecodeError as _:
+            formatter._msg.append("Could not parse output")
+
+    @classmethod
+    def from_dict(cls, response):
+        formatter = BarnOutputFormatter()
+        formatter._response = response
+        return formatter
+
+
+    def failed(self):
+        return not self.succeed()
+
+    def succeed(self):
+        status = self.status()
+        return True if status and status >= 200 and status <=299 else False
+
+    def status(self):
+        return None if self._response is None else self._response.get("status")
+
+    def results(self):
+        return [] if self._response is None else self._response.get("result")
+
+    def msg(self):
+        return self.msg + ([] if self._response is None else self._response.get("msg"))
+
+    def to_text(self):
+        output = []
+        if self.succeed():
+            output.append("Status: {}".format(click.style("succeeded", fg='green')))
+            for result in self.results():
+                output.append("{}: {}".format(result.get("type","unknown").upper(),result.get("name")))
+                if len(self.results()) == 1 and len(result.get("vars",[])) > 0:
+                    for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
+                        output.append("  %s"%(line))
+                # for var in result.get("vars",[]):
+                #     output.append("  {}: {}".format(result.get("type","unknown").upper(),result.get("name")))
+        else:
+            output.append("Status: {}".format(click.style("failed", fg='red')))
+            output.append("Status code: {}".format(self.status))
+            messages = self.msg()
+            if len(messages) > 1:
+                for m in messages:
+                    output.append("Message: {}".format(m))
+            elif len(messages) == 1:
+                output.append("Message: {}".format(messages[0]))
+            else:
+                output.append("Message: No message")
+
+        return "\n".join(output)
+    
+    def to_json(self, indent=2):
+        return json.dumps(self._response, indent=indent)
+
+    def to_yaml(self, indent=4):
+        return yaml.dump(self._response, indent=indent)
 
 
 pass_barn_context = click.make_pass_decorator(BarnContext)
@@ -186,6 +256,25 @@ def get_host(barn_context=None, host=None, **kwargs):
         for result in results.get("result", []):
             click.echo(result.get("name"))
 
+@get.command(name="host2")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.argument('host', required=False)
+@pass_barn_context
+def get_host2(barn_context=None, host=None, **kwargs):
+    barn = barn_context.get("barn")
+    data = {}
+    if host:
+        data["name"] = host
+    results = barn.request("POST", "/api/v1/inventory/hosts", data=data)
+    outformatter = BarnOutputFormatter.from_dict(results)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(outformatter.to_json())
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(outformatter.to_yaml())
+    else:
+        click.echo(outformatter.to_text())
 
 @get.command(name="group")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
