@@ -15,8 +15,8 @@ from app.blueprints.inventory_export import inventory_pages
 from app.blueprints.debug import debug_pages
 from app.blueprints.upload import upload_pages
 from app.blueprints.login import login_pages
-from app.blueprints.error import handle_authentication_failed, handle_bad_request, handle_internal_server_error, handle_mongodb_unreachable, pokemon_exception_handler
-from werkzeug.exceptions import NotFound, Unauthorized, InternalServerError
+from app.blueprints.error import handle_authentication_failed, handle_bad_request, handle_internal_server_error, handle_mongodb_unreachable, pokemon_exception_handler, handle_not_found
+from werkzeug.exceptions import NotFound, Unauthorized, InternalServerError, BadRequest
 from pymongo.errors import ServerSelectionTimeoutError
 from app.models import User
 
@@ -153,8 +153,10 @@ class BarnServer(Flask):
             self.register_blueprint(debug_pages)
 
     def _register_error_handlers(self):
-        self.register_error_handler(NotFound, handle_bad_request)
+        self.register_error_handler(NotFound, handle_not_found)
+        
         self.register_error_handler(Unauthorized, handle_authentication_failed)
+        self.register_error_handler(BadRequest, handle_bad_request)
         self.register_error_handler(
             InternalServerError, handle_internal_server_error)
         self.register_error_handler(
