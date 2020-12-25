@@ -138,7 +138,13 @@ components:
                   msg:
                     type: string
                     default: ""
-                    description: Output message in case of an error
+                    description: Main message which provides more details about the status
+                  msg_list:
+                    type: array
+                    items:
+                      type: string
+                    default: []
+                    description: List of all messages, the main message will be set in the 'msg' field
                   results:
                     type: array
                     items:
