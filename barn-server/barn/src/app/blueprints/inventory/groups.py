@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from mongoengine.errors import NotUniqueError
 from app.utils import list_parser, merge_args_data
 from flask_login import login_required
@@ -47,8 +47,7 @@ def put_groups(resp=None):
 
     name = args.get("name", None)
     if name is None:
-        resp.failed(msg='name not defined')
-        return resp.get_response()
+        abort(400, description="name not defined in request")
 
     #Create Group
     o_group = Group.objects(name=name).first()
@@ -57,16 +56,63 @@ def put_groups(resp=None):
             query_args = dict(name=name)
             o_group = Group(**query_args)
             resp.succeed(changed=True, status=HTTPStatus.CREATED)
+            resp.set_main_message(msg="Create group {}".format(name))
         except NotUniqueError:
-            resp.failed(msg='Duplicate Group: %s already exist' % (name))
+            resp.failed(msg='%s already exist' % (name))
             return resp.get_response()
     
-    #Set child Groups
-    if "child_groups" in args:
-        child_groups = list_parser(args.get("child_groups"))
-        o_child_groups = Group.objects(name__in=child_groups)
-        o_group["child_groups"] = o_child_groups
-        resp.changed()
+    if "child_groups" in args or "child_groups_present" in args:
+        child_groups = []
+        child_groups.extend(list_parser(args.get("child_groups", [])))
+        child_groups.extend(list_parser(args.get("child_groups_present", [])))
+        child_groups = list(set(child_groups))
+
+        for child_group in child_groups:
+            o_child_group = Group.objects(name=child_group).first()
+            if not o_child_group and args.get('create_groups', True):
+                o_child_group = Group(name=child_group)
+                o_child_group.save()
+                resp.changed()
+                resp.add_message("Create group {}".format(child_group))
+            if o_child_group:
+                if o_child_group not in o_group.child_groups:
+                    o_group.child_groups.append(o_child_group)
+                    resp.changed()
+                    resp.add_message("Add {} group as child-group".format(child_group))
+            else:
+                resp.add_message("Can't add {} as child group. Group does not exist.")
+
+    if "child_groups_set" in args:
+        o_child_groups = []
+        for child_group in list_parser(args.get("child_groups_set", [])):
+            o_child_group = Group.objects(name=child_group).first()
+            if not o_child_group and args.get('create_groups', True):
+                o_child_group = Group(name=child_group)
+                o_child_group.save()
+                resp.changed()
+                resp.add_message("Create group {}")
+            if o_child_group:
+                o_child_groups.append(o_child_group)
+            else:
+                resp.add_message("Can't set {} as child group. Group does not exist.")
+
+        if set(o_group.child_groups) - set(o_child_groups) != set():
+            o_group.child_groups = o_child_groups
+            resp.changed()
+            resp.add_message("Set child-groups to {}".format(','.join([cg.name for cg in o_child_groups])))
+
+    if "child_groups_absent" in args:
+        for child_group in list_parser(args.get("child_groups_absent")):
+            o_child_group = Group.objects(name=child_group).first()
+            if o_child_group is None:
+                resp.add_message("{} group does not exist".format(child_group))
+            elif o_child_group in o_group.child_groups:
+                o_group.child_groups.remove(o_child_group)
+                resp.changed()
+                resp.add_message("Remove {} from child-groups".format(child_group))
+            else:
+                resp.add_message("{} is not a child-group of {}".format(child_group, name))
+
     
     #Set Hosts
     if "hosts" in args:
