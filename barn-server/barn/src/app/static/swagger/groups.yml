@@ -84,7 +84,26 @@ put:
               type: array
               items:
                 type: string
-              description: Confiure the group its child groups
+              description: Alias for *child_groups_present*
+            child_groups_present:
+              type: array
+              items:
+                type: string
+              description: Make sure a certain list of child-groups is present
+            child_groups_set:
+              type: array
+              items:
+                type: string
+              description: Set a fixed list of child-groups. Remove all the others. 
+            child_groups_absent:
+              type: array
+              items:
+                type: string
+              description: Remove child-groups if they are present
+            create_groups:
+              type: boolean
+              default: true
+              description: When an unexisting group is used as child_groups or parrent_group it will be created. 
             hosts:
               type: array
               items:
