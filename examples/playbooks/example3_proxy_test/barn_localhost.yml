@@ -1,0 +1,7 @@
+---
+plugin: barn
+barn_user: admin
+barn_password: admin
+barn_hostname: 127.0.0.1
+barn_port: 5000
+fetch_variables: True

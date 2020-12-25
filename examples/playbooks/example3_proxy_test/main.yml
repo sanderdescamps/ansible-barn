@@ -1,0 +1,43 @@
+---
+- name: Test playbook for custom module
+  gather_facts: False
+  hosts:
+    - srvdns01.myhomecloud.be
+  tasks:
+    - name: barn read (http) 
+      barn_read:
+        barn_url: "http://127.0.0.1:5000"
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+      ignore_errors: yes
+
+    - name: barn read (https+proxy)
+      barn_read:
+        barn_url: "https://127.0.0.1:443"
+        validate_certs: False
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+      ignore_errors: yes
+
+    - name: barn read (http+proxy)
+      barn_read:
+        barn_url: "http://127.0.0.1"
+        validate_certs: False
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+      ignore_errors: yes
+
+    - name: barn read (http+proxy)
+      barn_read:
+        barn_url: "barn.myhomecloud.be"
+        validate_certs: False
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+      ignore_errors: yes
+
+    - name: barn read (http+proxy)
+      barn_read:
+        barn_url: "127.0.0.1"
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+      ignore_errors: yes
