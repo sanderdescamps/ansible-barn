@@ -1,17 +1,19 @@
-# Copyright (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
 from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+
+
+import os
+import re
+import json
 from ansible.utils.vars import merge_hash
 from ansible.config.manager import ensure_type
 from ansible.errors import AnsibleParserError
 from ansible.module_utils.urls import Request
 from ansible.module_utils.urls import urllib_error
 from ansible.plugins.inventory import BaseInventoryPlugin
-import os
-import re
-import json
-__metaclass__ = type
+
+
 
 DOCUMENTATION = '''
     inventory: barn
@@ -112,6 +114,7 @@ class InventoryModule(BaseInventoryPlugin):
                 for path in path_set:
                     if os.path.exists(path):
                         try:
+                            self.display.vv("Use config file: {}".format(path))
                             barn_vars = merge_hash(loader.load_from_file(
                                 path, cache=False), barn_vars)
                         except Exception as e:
@@ -156,20 +159,6 @@ class InventoryModule(BaseInventoryPlugin):
         if barn_password:
             query_args["url_password"] = barn_password
             query_args["force_basic_auth"] = True
-
-        # query_args = dict(
-        #     follow_redirects=True,
-        #     validate_certs=validate_certs
-        # )
-        # query_args["headers"] = {'Content-type': 'application/json'}
-
-        # if barn_vars.get("barn_user", False) and barn_vars.get("barn_password", False):
-        #     query_args["url_username"] = barn_vars.get("barn_user")
-        #     query_args["url_password"] = barn_vars.get("barn_password")
-        #     query_args["force_basic_auth"] = True
-        # elif barn_vars.get("token", False):
-        #     query_args["headers"]["x-access-tokens"] = barn_vars.get(
-        #         "token")
 
         hosts = []
         groups = []
