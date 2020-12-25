@@ -101,15 +101,15 @@ class ActionModule(ActionBase):
                 result = json.loads(e.read())
             except AttributeError:
                 result["status"] = 500
-                result["error"] = "Can't parse API response to json response"
+                result["msg"] = "Can't parse API response to json response"
                 result["failed"] = True
         except timeout:
             result["status"] = 503
-            result["error"] = "Connection timeout"
+            result["msg"] = "Connection timeout"
             result["failed"] = True
         except urllib_error.URLError as e:
             result["status"] = 503
-            result["error"] = "Can't connect to barn"
+            result["msg"] = "Can't connect to barn"
             result["failed"] = True
         except Exception as e:
             raise AnsibleActionFail(e)
