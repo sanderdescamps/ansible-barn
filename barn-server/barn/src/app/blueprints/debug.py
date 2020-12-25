@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, current_app
 from flask_login import login_required
 from app.models import Group, Host, User
 from app.auth import admin_permission
+from app.utils.formater import ResponseFormater
 
 
 
@@ -59,5 +60,5 @@ def test():
     logging.getLogger().warning("warning message")
     logging.getLogger().info("info message")
     logging.getLogger().debug("debug message")
-    print(None.test)
-    return jsonify(dict(msg="it works"))
+    return ResponseFormater().succeed(msg="it works").get_response()
+    # return jsonify(dict(msg="it works"))
