@@ -14,7 +14,6 @@ node_pages = Blueprint('nodes', __name__)
 def get_nodes():
     resp = ResponseFormater()
     args = request.args
- 
     query_args = dict()
     if "name" in args:
         query_args["name"] = args.get("name")
