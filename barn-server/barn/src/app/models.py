@@ -219,6 +219,9 @@ class Group(Node):
         for host in hosts:
             self._add_host(host)
 
+    def __str__(self):
+        return str(self.name)
+
     @classmethod
     def from_json(cls, json_data, created=False, append=False):
         if json_data.get("name"):
