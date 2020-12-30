@@ -12,7 +12,7 @@ get:
         required: false
         description: search on name of group
       - in: query
-        name: parrent_vars
+        name: parent_vars
         schema:
           type: string
         required: false
@@ -36,7 +36,7 @@ post:
         required: false
         description: search on name of node
       - in: query
-        name: parrent_vars
+        name: parent_vars
         schema:
           type: string
         required: false
@@ -103,12 +103,47 @@ put:
             create_groups:
               type: boolean
               default: true
-              description: When an unexisting group is used as child_groups or parrent_group it will be created. 
+              description: When an unexisting group is used as child_groups or parent_group it will be created. 
             hosts:
               type: array
               items:
                 type: string
-              description: Congigure the hosts which belong to the group
+              description: Alias for hosts_present
+            hosts_present:
+              type: array
+              items:
+                type: string
+              description: Add a host to a group
+            hosts_set:
+              type: array
+              items:
+                type: string
+              description: Set a fixed list of hosts to a group. Remove all other hosts from the groups. 
+            hosts_absent:
+              type: array
+              items:
+                type: string
+              description: Remove a host from a group
+            parent_groups:
+              type: array
+              items:
+                type: string
+              description: Alias for parent_groups_present
+            parent_groups_present:
+              type: array
+              items:
+                type: string
+              description: Set the group as a child-group of each parent-group. All other parent-groups will remain.
+            parent_groups_set:
+              type: array
+              items:
+                type: string
+              description: Set the group as a child-group of each parent-group. All other parent-groups will be removed.
+            parent_groups_absent:
+              type: array
+              items:
+                type: string
+              description: Remove group as child-group from the each parent-group
             vars:
               type: object
               description: Variables to add or update
