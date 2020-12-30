@@ -6,7 +6,6 @@ from flask_login.mixins import UserMixin
 from flask_principal import RoleNeed
 
 
-
 # class Role(Document):
 #     name = StringField(required=True)
 #     description = StringField()
@@ -65,6 +64,16 @@ class User(Document, UserMixin):
             # kwargs["roles"] = kwargs.get("roles",[]).append(o_admin)
             kwargs["roles"] = kwargs.get("roles", []) + ["admin"]
         super().__init__(*args, **kwargs)
+
+    def to_barn_dict(self):
+        return dict(
+            name=self.name,
+            username=self.username,
+            public_id=self.public_id,
+            type="user",
+            active=self.active,
+            roles=self.roles
+        )
 
     def __repr__(self):
         return '<User %r>' % (self.name)
