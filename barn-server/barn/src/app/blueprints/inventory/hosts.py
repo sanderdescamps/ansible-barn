@@ -163,10 +163,15 @@ def delete_hosts():
         return resp.get_response()
 
     o_hosts = Host.objects(**query_args)
+    
+    
+
     if o_hosts.count() < 1:
         resp.failed(msg='%s not found' % (args.get('name')))
-        return resp.get_response()
-    s_hosts = ','.join(o_hosts.scalar('name'))
-    o_hosts.delete()
-    resp.succeed(msg='Delete host %s' % (s_hosts), changed=True)
+    else:
+        #Remove host from all groups where the host is used
+        Group.objects(hosts__in=o_hosts).update(pull_all__hosts=o_hosts) 
+        s_hosts = ','.join(o_hosts.scalar('name'))
+        o_hosts.delete()
+        resp.succeed(msg='Delete host %s' % (s_hosts), changed=True)
     return resp.get_response()
