@@ -49,7 +49,6 @@ def handle_mongodb_unreachable(_):
 def pokemon_exception_handler(e):
     track = traceback.format_exc()
     logging.getLogger().error("Unknown Exception\n%s", track)
-    logging.getLogger().error("%s", dir(e))
     data = dict(
         msg=e.description if hasattr(e, 'description') else "Unknown Exception, check the logs for more details",
         status=e.code if hasattr(e, 'code') else 500,
