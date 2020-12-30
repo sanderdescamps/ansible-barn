@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from mongoengine.queryset import QuerySet
 from flask import jsonify, make_response
-from app.models import Node, Host, Group
+from app.models import Node, Host, Group, User
 
 
 class ResponseFormater():
@@ -121,7 +121,7 @@ class ResponseFormater():
         return self
 
     def add_result(self, result):
-        if isinstance(result, (dict, Host, Group, Node)):
+        if isinstance(result, (dict, Host, Group, Node, User)):
             result = [result]
         if isinstance(result, QuerySet):
             result = list(result)
@@ -129,7 +129,7 @@ class ResponseFormater():
             for res in result:
                 if isinstance(res, dict):
                     self._result.append(res)
-                elif isinstance(res, Node) or isinstance(res, Host) or isinstance(res, Group):
+                elif isinstance(res, Node) or isinstance(res, Host) or isinstance(res, Group) or isinstance(res, User):
                     self._result.append(res.to_barn_dict())
                 else:
                     raise TypeError("unsupported result type")
