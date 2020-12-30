@@ -150,9 +150,9 @@ class Host(Node):
 
 class Group(Node):
     # hosts = ListField(default=[])
-    hosts = ListField(ReferenceField('Host'))
+    hosts = ListField(ReferenceField('Host'), default=[])
     # parent_groups=ListField(ReferenceField('Group'))
-    child_groups = ListField(ReferenceField('Group'))
+    child_groups = ListField(ReferenceField('Group'), default=[])
 
     def get_hosts(self):
         result = self.hosts
