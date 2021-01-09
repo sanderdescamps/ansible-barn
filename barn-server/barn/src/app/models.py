@@ -75,6 +75,9 @@ class User(Document, UserMixin):
             roles=self.roles
         )
 
+    def reset_password(self, password):
+        self.password_hash = generate_password_hash(password, method='sha256')
+
     def __repr__(self):
         return '<User %r>' % (self.name)
     
