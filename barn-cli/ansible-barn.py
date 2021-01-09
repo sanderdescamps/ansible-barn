@@ -526,6 +526,56 @@ def init(barn_context=None, **kwargs):
     if confirmed:
         barn.request("PUT", "/init")
 
+@add.command(name="user")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
+@click.argument('username', default=None, required=False)
+@click.option('--name','-n', help="Full name of the user")
+@click.option('--role','-r', help="User role", multiple=True)
+@click.option('--password','-p', help="User password")
+@click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
+@pass_barn_context
+def add_user(barn_context=None, username=None, **kwargs):
+    name = kwargs.get("name", None)
+    roles = kwargs.get("role", None)
+    password = kwargs.get("password", None)
+    active = kwargs.get("active", True)
+    if kwargs.get("wizard", False) or not username :
+        click.echo("User wizard")
+
+        if not username:
+            username = click.prompt('  Username', type=str, default=None)
+        if not name:
+            name = click.prompt('  Name', type=str, default="", show_default=False)
+        if not roles:
+            roles = []
+            while(True):
+                role = click.prompt('  Role {}'.format(len(roles)+1), type=str, default="", show_default=False)
+                if role != "":
+                    roles.append(role.replace(" ",""))
+                else:
+                    break
+        if not password:
+            while(True):
+                password = click.prompt('  Password', hide_input=True, type=str)
+                if password == click.prompt('  Repeat password', hide_input=True, type=str):
+                    break
+    barn = barn_context.get("barn")
+
+    data = dict(username=username)
+    if name and name != "":
+        data["name"] = name
+    if roles:
+        data["roles"] = roles
+
+    barnresult = barn.request("PUT", "/api/v1/admin/users/add", data=data)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(barnresult.to_json())
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(barnresult.to_yaml())
+    else:
+        click.echo(barnresult.to_text())
 
 if __name__ == '__main__':
     main()

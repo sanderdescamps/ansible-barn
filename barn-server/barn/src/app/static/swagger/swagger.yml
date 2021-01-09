@@ -28,12 +28,6 @@ paths:
       responses:
         "200":
           description: OK
-  /api/v1/admin/users:
-    get:
-      summary: Register new user
-      responses:
-        "200":
-          description: OK
   /api/v1/ansible_inventory:
     get:
       summary: Return an json Ansible inventory file
@@ -114,6 +108,10 @@ paths:
     $ref: "./hosts_put.yml"
   /api/v1/inventory/groups:
     $ref: "./groups.yml"
+  /api/v1/admin/users:
+    $ref: "./users.yml#/users"
+  /api/v1/admin/users/{action}:
+    $ref: "./users.yml#/users_put"
 components:
   securitySchemes:
     basicAuth:
