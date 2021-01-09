@@ -80,12 +80,15 @@ def load_user_from_request(l_request):
 
     elif auth and auth.username and auth.password:
         check_user = User.objects(username=auth.username).first()
-        if check_password_hash(check_user.password_hash, auth.password):
-            identity_changed.send(current_app._get_current_object(), identity=Identity(check_user.public_id))
-            logging.getLogger().info("Auth: User %s logged in", check_user.username)
-            return check_user
+        if check_user:
+            if check_password_hash(check_user.password_hash, auth.password):
+                identity_changed.send(current_app._get_current_object(), identity=Identity(check_user.public_id))
+                logging.getLogger().info("Authentication successful: User %s logged in", check_user.username)
+                return check_user
+            else:
+                logging.getLogger().warning("Authentication failed: User %s failed to login", check_user.username)
         else:
-            logging.getLogger().info("Auth: User %s failed to login", check_user.username)
+            logging.getLogger().warning("Authentication failed: User {} does not exist", auth.username)
 
     return None
 
