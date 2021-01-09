@@ -544,38 +544,35 @@ def init(barn_context=None, **kwargs):
 @click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
 @pass_barn_context
 def add_user(barn_context=None, username=None, **kwargs):
-    name = kwargs.get("name", None)
-    roles = kwargs.get("role", None)
-    password = kwargs.get("password", None)
-    active = kwargs.get("active", True)
+    allowed_user_args = ["name", "active", "password", "password_hash"]
+    data = {key:value for key,value in kwargs.items() if key in allowed_user_args and value}
+    if username:
+        data["username"] = username
+
     if kwargs.get("wizard", False) or not username :
         click.echo("User wizard")
-
-        if not username:
-            username = click.prompt('  Username', type=str, default=None)
-        if not name:
-            name = click.prompt('  Name', type=str, default="", show_default=False)
-        if not roles:
-            roles = []
+        if not data.get("username"):
+            data["username"] = click.prompt('  Username', type=str, default=None)
+        if not data.get("name"):
+            data["name"] = click.prompt('  Name', type=str, default="", show_default=False)
+        if not kwargs.get("role"):
+            data["roles"] = []
             while(True):
-                role = click.prompt('  Role {}'.format(len(roles)+1), type=str, default="", show_default=False)
+                role = click.prompt('  Role {}'.format(len(data["roles"])+1), type=str, default="", show_default=False)
                 if role != "":
-                    roles.append(role.replace(" ",""))
+                    data["roles"].append(role.replace(" ",""))
                 else:
                     break
-        if not password:
+        if not data.get("password") and not data.get("password_hash"):
             while(True):
                 password = click.prompt('  Password', hide_input=True, type=str)
                 if password == click.prompt('  Repeat password', hide_input=True, type=str):
+                    data["password_hash"] = generate_password_hash(password, method='sha256')
                     break
+                else:
+                    click.secho("   Sorry, passwords do not match.",fg='red')
+
     barn = barn_context.get("barn")
-
-    data = dict(username=username)
-    if name and name != "":
-        data["name"] = name
-    if roles:
-        data["roles"] = roles
-
     barnresult = barn.request("PUT", "/api/v1/admin/users/add", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(barnresult.to_json())
