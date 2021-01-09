@@ -65,14 +65,16 @@ class Barn(object):
             query_args["headers"]["x-access-tokens"] = self.barn_token
 
         try:
-            click.echo("open request to %s/%s" %(self.barn_url, path.lstrip('/')))
             resp = Request().open(method.upper(), "%s/%s" %
                                (self.barn_url, path.lstrip('/')), **query_args)
-            return BarnResult.from_response(resp)
+            result = BarnResult.from_response(resp)
+            result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
+            return result
         except (urllib_error.HTTPError, HTTPError) as e:
             try:
                 result = BarnResult.from_dict(json.loads(e.read()))
                 result["status"] = int(getattr(e, 'code', -1))
+                result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
                 return result
             except AttributeError:
                 result = BarnResult.from_dict(dict(
@@ -80,6 +82,7 @@ class Barn(object):
                     failed=True,
                     changed=False
                 ))
+                result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
                 result.set_main_message("Can't parse API response to json response")
                 return result
         return None
