@@ -102,6 +102,9 @@ class User(Document, UserMixin):
                 missing_roles.append(role)
         return missing_roles
 
+    def __hash__(self):
+        return hash((self.name, self.username, self.public_id, self.password_hash, self.active, frozenset(self.roles)))
+
 
 class Node(Document):
     name = StringField(required=True, unique=True)
