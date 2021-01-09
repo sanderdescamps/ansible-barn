@@ -20,7 +20,7 @@ class ResponseFormater():
             new._failed = self._failed or other._failed
             new._changed = self._changed or other._changed
             new._status = self._status if self._status >= other._status else other._status
-            new._status = self._msg if other._msg is None or other._msg == "" else other._msg
+            new._msg = self._msg if other._msg is None or other._msg == "" else other._msg
             new._msg_list = list(self._msg_list + other._msg_list)
             new._header.update(other._header)
             new._header.update(self._header)
