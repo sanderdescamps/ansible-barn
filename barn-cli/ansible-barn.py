@@ -7,19 +7,20 @@ import click
 from ansible.module_utils.urls import Request, urllib_error
 from ansible.utils.vars import merge_hash
 from ansible.config.manager import ensure_type
+from urllib.error import HTTPError
 
 
-BARN_CONFIG_PATHS = [
-    os.path.join(os.getcwd(), "barn.yml"),
-    os.path.join(os.getcwd(), "barn.yaml"),
-    os.path.join(os.getcwd(), "barn.json"),
-    os.path.join(os.path.expanduser("~"), ".barn.yml"),
-    os.path.join(os.path.expanduser("~"), ".barn.yaml"),
-    os.path.join(os.path.expanduser("~"), ".barn.json"),
-    os.path.join("/etc/barn/", "barn.yml"),
-    os.path.join("/etc/barn/", "barn.yaml"),
-    os.path.join("/etc/barn/", "barn.json")
-]
+# BARN_CONFIG_PATHS = [
+#     os.path.join(os.getcwd(), "barn.yml"),
+#     os.path.join(os.getcwd(), "barn.yaml"),
+#     os.path.join(os.getcwd(), "barn.json"),
+#     os.path.join(os.path.expanduser("~"), ".barn.yml"),
+#     os.path.join(os.path.expanduser("~"), ".barn.yaml"),
+#     os.path.join(os.path.expanduser("~"), ".barn.json"),
+#     os.path.join("/etc/barn/", "barn.yml"),
+#     os.path.join("/etc/barn/", "barn.yaml"),
+#     os.path.join("/etc/barn/", "barn.json")
+# ]
 
 BARN_CONFIG_PATHS = [
     [
@@ -66,12 +67,23 @@ class Barn(object):
         result = None
         try:
             click.echo("open request to %s/%s" %(self.barn_url, path.lstrip('/')))
-            r = Request().open(method.upper(), "%s/%s" %
+            resp = Request().open(method.upper(), "%s/%s" %
                                (self.barn_url, path.lstrip('/')), **query_args)
-            result = json.loads(r.read())
-        except urllib_error.HTTPError as e:
-            result = json.loads(e.read())
-        return result
+            return BarnResult.from_response(resp)
+        except (urllib_error.HTTPError, HTTPError) as e:
+            try:
+                result = BarnResult.from_dict(json.loads(e.read()))
+                result["status"] = int(getattr(e, 'code', -1))
+                return result
+            except AttributeError:
+                result = BarnResult.from_dict(dict(
+                    status=None,
+                    failed=True,
+                    changed=False
+                ))
+                result.set_main_message("Can't parse API response to json response")
+                return result
+        return None
 
     def __str__(self):
         output = dict(
@@ -131,76 +143,124 @@ class BarnContext(dict):
     pass
 pass_barn_context = click.make_pass_decorator(BarnContext)
 
-class BarnOutputFormatter(object):
-    """
-    docstring
-    """
-    def __init__(self):
-        self._response = None
-        self._msg = []
+class BarnResult(dict):
 
+    def set_main_message(self, message):
+        """Set the main message of the response. Message will also be added to the msg_list. 
+
+        Args:
+            message (str): Message
+
+        Returns:
+            ResponseFormatter: return self
+        """
+        self.add_message(message)
+        self["msg"] = message
+        return self
+
+    def add_message(self, message):
+        """Add a message to the logs of the response
+
+        Args:
+            message (str): message
+
+        Returns:
+            ResponseFormatter: return self
+        """
+        if "msg_list" not in self:
+            self["msg_list"] = []
+        self["msg_list"].append(message)
+        return self
+    
     @classmethod
     def from_response(cls, response):
-        formatter = BarnOutputFormatter()
-        
+        json_response =  None
         try:
-            return BarnOutputFormatter.from_dict(json.loads(response.read())) 
+            json_response = json.loads(response.read())
         except json.JSONDecodeError as _:
-            formatter._msg.append("Could not parse output")
-
+            json_response = dict(
+                msg="Failed to format the response",
+                failed=True
+                )
+        return BarnResult.from_dict(json_response)
+    
     @classmethod
-    def from_dict(cls, response):
-        formatter = BarnOutputFormatter()
-        formatter._response = response
-        return formatter
-
+    def from_dict(cls, response_dict):
+        result = BarnResult()
+        result.update(response_dict)
+        return result
 
     def failed(self):
         return not self.succeed()
 
     def succeed(self):
-        status = self.status()
+        status = self.get("status")
         return True if status and status >= 200 and status <=299 else False
 
-    def status(self):
-        return None if self._response is None else self._response.get("status")
+    # def status(self):
+    #     return None if self._response is None else self._response.get("status")
 
-    def results(self):
-        return [] if self._response is None else self._response.get("result")
+    # def results(self):
+    #     return [] if self._response is None else self._response.get("result")
 
-    def msg(self):
-        return self.msg + ([] if self._response is None else self._response.get("msg"))
+    # def msg(self):
+    #     return self.msg + ([] if self._response is None else self._response.get("msg"))
 
+    # def to_text(self):
+    #     output = []
+    #     if self.succeed():
+    #         output.append("Status: {}".format(click.style("succeeded", fg='green')))
+    #         for result in self.get("result",[]):
+    #             output.append("{}: {}".format(result.get("type","unknown").upper(),result.get("name")))
+    #             if len(self.get("results",[])) == 1 and len(result.get("vars",[])) > 0:
+    #                 for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
+    #                     output.append("  %s"%(line))
+
+    #     else:
+    #         output.append("Status: {}".format(click.style("failed", fg='red')))
+    #         output.append("Status code: {}".format(self.get("status")))
+    #         messages = self.get("msg_list")
+    #         if len(messages) > 1:
+    #             output.append("Message:")
+    #             for m in messages:
+    #                 output.append("  - {}".format(m))
+    #         elif len(messages) == 1:
+    #             output.append("Message: {}".format(messages[0]))
+    #         else:
+    #             output.append("Message: No message")
+
+    #     return "\n".join(output)
+    
     def to_text(self):
         output = []
         if self.succeed():
             output.append("Status: {}".format(click.style("succeeded", fg='green')))
-            for result in self.results():
-                output.append("{}: {}".format(result.get("type","unknown").upper(),result.get("name")))
-                if len(self.results()) == 1 and len(result.get("vars",[])) > 0:
-                    for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
-                        output.append("  %s"%(line))
-                # for var in result.get("vars",[]):
-                #     output.append("  {}: {}".format(result.get("type","unknown").upper(),result.get("name")))
         else:
             output.append("Status: {}".format(click.style("failed", fg='red')))
-            output.append("Status code: {}".format(self.status))
-            messages = self.msg()
-            if len(messages) > 1:
-                for m in messages:
-                    output.append("Message: {}".format(m))
-            elif len(messages) == 1:
-                output.append("Message: {}".format(messages[0]))
-            else:
-                output.append("Message: No message")
+        output.append("Status code: {}".format(self.get("status")))
+
+        output.append("Changed: {}".format(str(self.get("changed", "unknown"))))
+
+        output.append("Message:")
+        for msg in self.get("msg_list", []):
+            output.append("  {}".format(click.style(msg, bold=(self.get("msg") == msg))))
+
+
+        if self.get("result", []) != []:
+            output.append("Results: ")
+            for result in self.get("result",[]):
+                output.append("  {}: {}".format(result.get("type","unknown").upper(), result.get("name")))
+                if len(self.get("results", [])) == 1 and len(result.get("vars",[])) > 0:
+                    for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
+                        output.append("    {}".format(line))
 
         return "\n".join(output)
-    
+
     def to_json(self, indent=2):
-        return json.dumps(self._response, indent=indent)
+        return json.dumps(self, indent=indent)
 
     def to_yaml(self, indent=4):
-        return yaml.dump(self._response, indent=indent)
+        return yaml.dump(self, indent=indent)
 
 def _load_barn_config_file(path):
     barn_vars = {}
@@ -293,37 +353,14 @@ def get_host(barn_context=None, host=None, **kwargs):
     data = {}
     if host:
         data["name"] = host
-    results = barn.request("POST", "/api/v1/inventory/hosts", data=data)
-    if not results or results.get("result", []) == []:
-        click.echo("no results found")
-        sys.exit(1)
+    barnresult = barn.request("POST", "/api/v1/inventory/hosts", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results, indent=2))
+        click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results, indent=2))
+        click.echo(barnresult.to_yaml())
     else:
-        for result in results.get("result", []):
-            click.echo(result.get("name"))
+        click.echo(barnresult.to_text())
 
-@get.command(name="host2")
-@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
-@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
-@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
-@click.argument('host', required=False)
-@pass_barn_context
-def get_host2(barn_context=None, host=None, **kwargs):
-    barn = barn_context.get("barn")
-    data = {}
-    if host:
-        data["name"] = host
-    results = barn.request("POST", "/api/v1/inventory/hosts", data=data)
-    outformatter = BarnOutputFormatter.from_dict(results)
-    if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(outformatter.to_json())
-    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(outformatter.to_yaml())
-    else:
-        click.echo(outformatter.to_text())
 
 @get.command(name="group")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
@@ -336,17 +373,13 @@ def get_group(barn_context=None, group=None, **kwargs):
     data = {}
     if group:
         data["name"] = group
-    results = barn.request("POST", "/api/v1/inventory/groups", data=data)
-    if not results or results.get("result", []) == []:
-        click.echo("no results found")
-        sys.exit(1)
+    barnresult = barn.request("POST", "/api/v1/inventory/groups", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results, indent=2))
+        click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results, indent=2))
+        click.echo(barnresult.to_yaml())
     else:
-        for result in results.get("result", []):
-            click.echo(result.get("name"))
+        click.echo(barnresult.to_text())
 
 
 @get.command(name="node")
@@ -363,17 +396,13 @@ def get_node(barn_context=None, node=None, **kwargs):
         data["name"] = node
     if kwargs.get("type"):
         data["type"] = kwargs.get("type")
-    results = barn.request("POST", "/api/v1/inventory/nodes", data=data)
-    if not results or results.get("result", []) == []:
-        click.echo("no results found")
-        sys.exit(1)
+    barnresult = barn.request("POST", "/api/v1/inventory/nodes", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results, indent=2))
+        click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results, indent=2))
+        click.echo(barnresult.to_yaml())
     else:
-        for result in results.get("result", []):
-            click.echo(result.get("name"))
+        click.echo(barnresult.to_text())
 
 
 @add.command(name="host")
@@ -397,18 +426,24 @@ def add_host(barn_context=None, name=None, **kwargs):
         key, value = variable.split("=")
         data["vars"][key.strip()] = value.strip().strip('"').strip("'")
 
-    results = barn.request("PUT", "/api/v1/inventory/hosts/add", data=data)
+    barnresult = barn.request("PUT", "/api/v1/inventory/hosts/add", data=data)
+    # if kwargs.get("format") == "json" or kwargs.get("json"):
+    #     click.echo(json.dumps(results, indent=2))
+    # elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+    #     click.echo(yaml.dump(results, indent=2))
+    # else:
+    #     if results.get("failed"):
+    #         for msg in results.get("msg"):
+    #             click.echo("Failed: %s" % (msg))
+    #     else:
+    #         for result in results.get("result", []):
+    #             click.echo(result.get("name"))
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results, indent=2))
+        click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results, indent=2))
+        click.echo(barnresult.to_yaml())
     else:
-        if results.get("failed"):
-            for msg in results.get("msg"):
-                click.echo("Failed: %s" % (msg))
-        else:
-            for result in results.get("result", []):
-                click.echo(result.get("name"))
+        click.echo(barnresult.to_text())
 
 
 @delete.command(name="host")
@@ -423,19 +458,44 @@ def delete_host(barn_context=None, name=None, **kwargs):
     """
     barn = barn_context.get("barn")
     data = dict(name=name)
-    results = barn.request("DELETE", "/api/v1/inventory/hosts", data=data)
+    barnresult = barn.request("DELETE", "/api/v1/inventory/hosts", data=data)
+    # if kwargs.get("format") == "json" or kwargs.get("json"):
+    #     click.echo(json.dumps(results, indent=2))
+    # elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+    #     click.echo(yaml.dump(results, indent=2))
+    # else:
+    #     if results.get("failed"):
+    #         for msg in results.get("msg"):
+    #             click.echo("Failed: %s" % (msg))
+    #     else:
+    #         for result in results.get("result", []):
+    #             click.echo(result.get("name"))
     if kwargs.get("format") == "json" or kwargs.get("json"):
-        click.echo(json.dumps(results, indent=2))
+        click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-        click.echo(yaml.dump(results, indent=2))
+        click.echo(barnresult.to_yaml())
     else:
-        if results.get("failed"):
-            for msg in results.get("msg"):
-                click.echo("Failed: %s" % (msg))
-        else:
-            for result in results.get("result", []):
-                click.echo(result.get("name"))
+        click.echo(barnresult.to_text())
 
+@delete.command(name="group")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
+@click.argument('name', required=True)
+@pass_barn_context
+def delete_group(barn_context=None, name=None, **kwargs):
+    """
+    name: Name of the host
+    """
+    barn = barn_context.get("barn")
+    data = dict(name=name)
+    barnresult = barn.request("DELETE", "/api/v1/inventory/groups", data=data)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(barnresult.to_json())
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(barnresult.to_yaml())
+    else:
+        click.echo(barnresult.to_text())
 
 @main.command(name="test", context_settings=dict(ignore_unknown_options=True))
 @pass_barn_context
