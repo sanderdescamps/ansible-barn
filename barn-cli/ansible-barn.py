@@ -64,7 +64,6 @@ class Barn(object):
         elif self.barn_token:
             query_args["headers"]["x-access-tokens"] = self.barn_token
 
-        result = None
         try:
             click.echo("open request to %s/%s" %(self.barn_url, path.lstrip('/')))
             resp = Request().open(method.upper(), "%s/%s" %
