@@ -256,7 +256,10 @@ class BarnResult(dict):
         if self.get("result", []) != []:
             output.append("Results: ")
             for result in self.get("result",[]):
-                output.append("  {}: {}".format(result.get("type","unknown").upper(), result.get("name")))
+                if result.get("type","").upper() == "USER":
+                    output.append("  {}: {} ({})".format(result.get("type").upper(), result.get("username"),result.get("name")))
+                else:
+                    output.append("  {}: {}".format(result.get("type","unknown").upper(), result.get("name")))
                 if len(self.get("results", [])) == 1 and len(result.get("vars",[])) > 0:
                     for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
                         output.append("    {}".format(line))
@@ -575,6 +578,32 @@ def add_user(barn_context=None, username=None, **kwargs):
 
     barn = barn_context.get("barn")
     barnresult = barn.request("PUT", "/api/v1/admin/users/add", data=data)
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(barnresult.to_json())
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(barnresult.to_yaml())
+    else:
+        click.echo(barnresult.to_text())
+
+@get.command(name="user")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
+@click.argument('username', default=None, required=False)
+@click.option('--username', default=None, required=False, help="Username")
+@click.option('--name','-n', help="Full name of the user")
+@click.option('--role','-r', help="User role", multiple=True)
+@click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
+@pass_barn_context
+def get_user(barn_context=None, username=None, **kwargs):
+    data = dict()
+    if username or kwargs.get("username"):
+        data["username"] = username or kwargs.get("username")
+    if kwargs.get("name"):
+        data["name"] = username or kwargs.get("name")
+
+    barn = barn_context.get("barn")
+    barnresult = barn.request("POST", "/api/v1/admin/users", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
