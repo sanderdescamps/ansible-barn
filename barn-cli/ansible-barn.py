@@ -8,6 +8,7 @@ from ansible.module_utils.urls import Request, urllib_error
 from ansible.utils.vars import merge_hash
 from ansible.config.manager import ensure_type
 from urllib.error import HTTPError
+from werkzeug.security import generate_password_hash
 
 
 # BARN_CONFIG_PATHS = [
