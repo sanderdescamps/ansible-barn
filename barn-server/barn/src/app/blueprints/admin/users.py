@@ -31,6 +31,7 @@ def signup_user():
 
 @user_pages.route('/api/v1/admin/users', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def get_user():
     resp = ResponseFormater()
     user_kwargs = request.args if request.method == 'GET' else request.get_json(
@@ -48,7 +49,7 @@ def get_user():
 @user_pages.route('/api/v1/admin/users', defaults={'action': "present"}, methods=['PUT'])
 @user_pages.route('/api/v1/admin/users/<string:action>', methods=['PUT'])
 @login_required
-@admin_permission.require()
+@admin_permission.require(http_exception=403)
 def put_user(action="present"):
 
     resp = ResponseFormater()
@@ -94,15 +95,11 @@ def put_user(action="present"):
 
 def _add_user(**kwargs):
     resp = ResponseFormater()
-
     user_kwargs = kwargs.copy()
-    # mandatory_properties = ["username", "name"]
-    # for prop_name in mandatory_properties:
-    #     if user_kwargs.get(prop_name) is None:
-    #         resp.failed("{} not defined".format(prop_name))
 
-    if "password" not in kwargs:
+    if "password" not in user_kwargs and "password_hash" not in user_kwargs:
         user_kwargs["password"] = generate_password()
+        resp.add_message("Generate random password for {}".format(user_kwargs.get("username","unknown user")))
 
     if user_kwargs.get("roles") is not None:
         user_kwargs["roles"] = list_parser(user_kwargs.get("roles"))
@@ -151,8 +148,6 @@ def _modify_user(**user_kwargs):
     if user_kwargs.get("roles") is not None:
         o_user.roles = list(set(o_user.roles + list_parser(user_kwargs.get("roles"))))
 
-    print(o_user_hash)
-    print(hash(o_user))
     if o_user_hash != hash(o_user):
         o_user.save()
         resp.add_message("User modified")
@@ -163,7 +158,7 @@ def _modify_user(**user_kwargs):
 
 @user_pages.route('/api/v1/admin/users', methods=['DELETE'])
 @login_required
-@admin_permission.require()
+@admin_permission.require(http_exception=403)
 def delete_user():
     resp = ResponseFormater()
     request_args = merge_args_data(request.args, request.get_json(silent=True))
