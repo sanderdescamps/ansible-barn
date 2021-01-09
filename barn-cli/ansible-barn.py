@@ -240,10 +240,14 @@ class BarnResult(dict):
 
         output.append("Changed: {}".format(str(self.get("changed", "unknown"))))
 
-        output.append("Message:")
-        for msg in self.get("msg_list", []):
-            output.append("  {}".format(click.style(msg, bold=(self.get("msg") == msg))))
-
+        
+        msg_list = self.get("msg_list") or [self.get("msg")] if self.get("msg",[]) != [] else None or []
+        if self.get("msg_list",[]) != []:
+            output.append("Message:")
+            for msg in msg_list:
+                output.append("  {}".format(click.style(msg, bold=(self.get("msg") == msg))))
+        elif self.get("msg","") != "":
+            output.append("  Message: {}".format(click.style(self.get("msg"), bold=True)))
 
         if self.get("result", []) != []:
             output.append("Results: ")
