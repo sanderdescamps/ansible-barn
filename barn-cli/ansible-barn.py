@@ -590,18 +590,16 @@ def add_user(barn_context=None, username=None, **kwargs):
 @click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
 @click.argument('username', default=None, required=False)
-@click.option('--username', default=None, required=False, help="Username")
 @click.option('--name','-n', help="Full name of the user")
 @click.option('--role','-r', help="User role", multiple=True)
 @click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
 @pass_barn_context
 def get_user(barn_context=None, username=None, **kwargs):
     data = dict()
-    if username or kwargs.get("username"):
-        data["username"] = username or kwargs.get("username")
+    if username :
+        data["username"] = username
     if kwargs.get("name"):
         data["name"] = username or kwargs.get("name")
-
     barn = barn_context.get("barn")
     barnresult = barn.request("POST", "/api/v1/admin/users", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
