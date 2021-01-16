@@ -8,12 +8,13 @@ from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
 from app.blueprints.admin.users import user_pages
 from app.blueprints.admin.export import export_pages
+from app.blueprints.admin.data_import import import_pages
 from app.blueprints.inventory.hosts import host_pages
 from app.blueprints.inventory.groups import group_pages
 from app.blueprints.inventory.nodes import node_pages
 from app.blueprints.inventory_export import inventory_pages
 from app.blueprints.debug import debug_pages
-from app.blueprints.upload import upload_pages
+from app.blueprints.views import views
 from app.blueprints.login import login_pages
 from app.blueprints.error import handle_authentication_failed, handle_bad_request, handle_internal_server_error, handle_mongodb_unreachable, pokemon_exception_handler, handle_not_found, handle_forbidden
 from werkzeug.exceptions import Forbidden, NotFound, Unauthorized, InternalServerError, BadRequest
@@ -147,7 +148,8 @@ class BarnServer(Flask):
         self.register_blueprint(node_pages)
         self.register_blueprint(inventory_pages)
         self.register_blueprint(export_pages)
-        self.register_blueprint(upload_pages)
+        self.register_blueprint(import_pages)
+        self.register_blueprint(views)
         self.register_blueprint(login_pages)
         if self.config.get("BARN_CONFIG", {}).get("debug_mode", False):
             self.register_blueprint(debug_pages)
