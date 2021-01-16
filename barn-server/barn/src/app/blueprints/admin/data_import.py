@@ -16,8 +16,7 @@ def put_file_import():
     resp = ResponseFormater()
     hosts_to_add = []
     groups_to_add = []
-    logging.debug(request.files.values())
-    logging.debug(request.files.keys())
+    keep_existing_nodes =  str(request.args.get("keep") or request.form.getlist('keep')).lower() in ["on","true","1","yes"]
     for file in request.files.values():
         fileextention = file.filename.split(".")[-1]
         to_add = None
@@ -49,11 +48,13 @@ def put_file_import():
                 groups_to_add.append(node)
 
     if len(hosts_to_add) > 0 or len(groups_to_add) > 0:
-        o_nodes_to_delete = Node.objects()
-        if o_nodes_to_delete.count() > 0:
-            o_nodes_to_delete.delete()
-            resp.add_message("Remove old hosts and groups")
-            resp.changed()
+        if not keep_existing_nodes:
+            o_nodes_to_delete = Node.objects()
+            if o_nodes_to_delete.count() > 0:
+                o_nodes_to_delete.delete()
+                resp.add_message("Remove old hosts and groups")
+                logging.info("Remove all existing nodes during import")
+                resp.changed()
 
         # first make sure all nodes exist
         for host in hosts_to_add:
