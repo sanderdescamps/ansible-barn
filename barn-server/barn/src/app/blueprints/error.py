@@ -4,6 +4,8 @@ from flask import jsonify, make_response
 from flask_login import current_user
 from flask_principal import Permission
 
+
+
 #400
 def handle_bad_request(e):
     data = dict(
