@@ -10,7 +10,13 @@ get:
         schema:
           type: string
         required: false
-        description: search on name of group
+        description: Filter on name of group. Use '*' as a wildcard. 
+      - in: query
+        name: regex
+        schema:
+          type: boolean
+        required: false
+        description: Name is regular expression
       - in: query
         name: parent_vars
         schema:
@@ -28,19 +34,6 @@ post:
     - inventory
   security:
     - basicAuth: []
-  parameters:
-      - in: query
-        name: name
-        schema:
-          type: string
-        required: false
-        description: search on name of node
-      - in: query
-        name: parent_vars
-        schema:
-          type: string
-        required: false
-        description: (under construction) Return also the vars from the host its groups 
   requestBody:
     required: false
     content:
@@ -51,6 +44,10 @@ post:
             name:
               type: string
               description: Name of the group
+            regex:
+              title: Name is regular expression
+              type: boolean
+              description: The name is a regular expression. The regular expression need to match the entire name.
             groups:
               type: array
               items:
