@@ -356,6 +356,7 @@ def delete(barn_context=None):
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--regex', '-r', help="hostname is regular expression", is_flag=True, default=False)
 @click.argument('host', required=False)
 @pass_barn_context
 def get_host(barn_context=None, host=None, **kwargs):
@@ -363,6 +364,8 @@ def get_host(barn_context=None, host=None, **kwargs):
     data = {}
     if host:
         data["name"] = host
+    if kwargs.get("regex"):
+        data["regex"] = True
     barnresult = barn.request("POST", "/api/v1/inventory/hosts", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(barnresult.to_json())

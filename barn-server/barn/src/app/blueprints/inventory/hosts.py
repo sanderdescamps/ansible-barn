@@ -1,37 +1,31 @@
+import re
+import logging
 from flask import request, Blueprint
 from flask_login import login_required
 from mongoengine.errors import NotUniqueError
 from http import HTTPStatus
 from app.models import Host, Group
-from app.utils import merge_args_data, list_parser
+from app.utils import merge_args_data, list_parser, boolean_parser
 from app.utils.formater import ResponseFormater
-
 
 host_pages = Blueprint('host', __name__)
 
 
-@host_pages.route('/api/v1/inventory/hosts', methods=['GET'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['GET','POST'])
 @login_required
 def get_hosts(resp=None):
     if resp is None:
         resp = ResponseFormater()
-    args = request.args
-
+    args = request.args if request.method == 'GET' else request.get_json(
+        silent=True) or {}
     query_args = dict()
-    if "name" in args:
-        query_args["name"] = args.get("name")
-    resp.add_result(Host.objects(**query_args))
-    return resp.get_response()
-
-@host_pages.route('/api/v1/inventory/hosts', methods=['POST'])
-@login_required
-def post_hosts():
-    resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
-
-    query_args = dict()
-    if "name" in args:
-        query_args["name"] = args.get("name")
+    if "name" in args:     
+        if boolean_parser(args.get("regex",False)):
+            regex_name = re.compile("^{}$".format(args.get("name").strip(" ").lstrip("^").rstrip("$")))
+            query_args["name"] = regex_name
+        else:
+            regex_name = re.compile(r"^{}$".format(re.escape(args.get("name")).replace("\*",".*")))
+            query_args["name"] = regex_name
     resp.add_result(Host.objects(**query_args))
     return resp.get_response()
 
@@ -164,8 +158,6 @@ def delete_hosts():
 
     o_hosts = Host.objects(**query_args)
     
-    
-
     if o_hosts.count() < 1:
         resp.failed(msg='%s not found' % (args.get('name')))
     else:
