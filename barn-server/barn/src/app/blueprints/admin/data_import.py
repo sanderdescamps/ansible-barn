@@ -16,7 +16,8 @@ def put_file_import():
     resp = ResponseFormater()
     hosts_to_add = []
     groups_to_add = []
-    keep_existing_nodes =  str(request.args.get("keep") or request.form.getlist('keep')).lower() in ["on","true","1","yes"]
+    keep_existing_nodes =  str(request.args.get("keep") or next(iter(request.form.getlist('keep')), None)).lower() in ["on","true","1","yes"]
+
     for file in request.files.values():
         fileextention = file.filename.split(".")[-1]
         to_add = None
@@ -55,6 +56,8 @@ def put_file_import():
                 resp.add_message("Remove old hosts and groups")
                 logging.info("Remove all existing nodes during import")
                 resp.changed()
+            else:
+                logging.info("Keep existing nodes during import")
 
         # first make sure all nodes exist
         for host in hosts_to_add:
@@ -66,7 +69,7 @@ def put_file_import():
 
         for host in hosts_to_add:
             try:
-                o_host = Host.from_json(host)
+                o_host = Host.from_json(host, append=True)
                 o_host.save()
                 resp.add_result(o_host)
                 resp.changed()
@@ -74,7 +77,7 @@ def put_file_import():
                 resp.add_message("Failed to import host %s"%(host.get("name","unknown")))
         for group in groups_to_add:
             try:
-                o_group = Group.from_json(group)
+                o_group = Group.from_json(group,append=True)
                 o_group.save()
                 resp.add_result(o_group)
                 resp.changed()
