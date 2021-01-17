@@ -356,7 +356,7 @@ def delete(barn_context=None):
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
-@click.option('--regex', '-r', help="hostname is regular expression", is_flag=True, default=False)
+@click.option('--regex', '-r', help="Name is regular expression", is_flag=True, default=False)
 @click.argument('host', required=False)
 @pass_barn_context
 def get_host(barn_context=None, host=None, **kwargs):
@@ -379,6 +379,7 @@ def get_host(barn_context=None, host=None, **kwargs):
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--regex', '-r', help="Name is regular expression", is_flag=True, default=False)
 @click.argument('group', required=False)
 @pass_barn_context
 def get_group(barn_context=None, group=None, **kwargs):
@@ -386,6 +387,8 @@ def get_group(barn_context=None, group=None, **kwargs):
     data = {}
     if group:
         data["name"] = group
+    if kwargs.get("regex"):
+        data["regex"] = True
     barnresult = barn.request("POST", "/api/v1/inventory/groups", data=data)
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(barnresult.to_json())
@@ -399,6 +402,7 @@ def get_group(barn_context=None, group=None, **kwargs):
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.option('--regex', '-r', help="Name is regular expression", is_flag=True, default=False)
 @click.option('--type', '-t', help="Define type of the node", default=None, type=click.Choice(["host", "group"]))
 @click.argument('node', required=False)
 @pass_barn_context
@@ -407,6 +411,8 @@ def get_node(barn_context=None, node=None, **kwargs):
     data = {}
     if node:
         data["name"] = node
+    if kwargs.get("regex"):
+        data["regex"] = True
     if kwargs.get("type"):
         data["type"] = kwargs.get("type")
     barnresult = barn.request("POST", "/api/v1/inventory/nodes", data=data)

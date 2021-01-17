@@ -1,9 +1,10 @@
 import logging
+import re
 from http import HTTPStatus
 from flask import Blueprint, request, abort
 from mongoengine.errors import NotUniqueError
 from flask_login import login_required
-from app.utils import list_parser, merge_args_data
+from app.utils import list_parser, merge_args_data, boolean_parser
 from app.models import Group, Host
 from app.utils.formater import ResponseFormater
 
@@ -11,31 +12,22 @@ from app.utils.formater import ResponseFormater
 group_pages = Blueprint('group', __name__)
 
 
-@group_pages.route('/api/v1/inventory/groups', methods=['GET'])
+@group_pages.route('/api/v1/inventory/groups', methods=['GET','POST'])
 @login_required
 def get_groups(resp=None):
     if resp is None:
         resp = ResponseFormater()
-    args = request.args
+    args = request.args if request.method == 'GET' else request.get_json(
+        silent=True) or {}
 
     query_args = dict()
-    if "name" in args:
-        query_args["name"] = args.get("name")
-    o_groups = Group.objects(**query_args)
-    resp.add_result(o_groups)
-    return resp.get_response()
-
-
-@group_pages.route('/api/v1/inventory/groups', methods=['POST'])
-@login_required
-def post_groups(resp=None):
-    if resp is None:
-        resp = ResponseFormater()
-    data = request.get_json(silent=True)
-
-    query_args = dict()
-    if "name" in data:
-        query_args["name"] = data.get("name")
+    if "name" in args:     
+        if boolean_parser(args.get("regex",False)):
+            regex_name = re.compile("^{}$".format(args.get("name").strip(" ").lstrip("^").rstrip("$")))
+            query_args["name"] = regex_name
+        else:
+            regex_name = re.compile(r"^{}$".format(re.escape(args.get("name")).replace("\*",".*")))
+            query_args["name"] = regex_name
     o_groups = Group.objects(**query_args)
     resp.add_result(o_groups)
     return resp.get_response()

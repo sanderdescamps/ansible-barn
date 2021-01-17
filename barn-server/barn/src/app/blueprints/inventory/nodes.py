@@ -1,7 +1,8 @@
+import re
 from flask import request, Blueprint
 from flask_login import login_required
 from app.models import Node
-from app.utils import merge_args_data, list_parser
+from app.utils import merge_args_data, list_parser, boolean_parser
 from app.blueprints.inventory.hosts import put_hosts
 from app.blueprints.inventory.groups import put_groups
 from app.utils.formater import ResponseFormater
@@ -9,33 +10,20 @@ from app.utils.formater import ResponseFormater
 node_pages = Blueprint('nodes', __name__)
 
 
-@node_pages.route('/api/v1/inventory/nodes', methods=['GET'])
+@node_pages.route('/api/v1/inventory/nodes', methods=['GET','POST'])
 @login_required
 def get_nodes():
     resp = ResponseFormater()
-    args = request.args
+    args = request.args if request.method == 'GET' else request.get_json(
+        silent=True) or {}
     query_args = dict()
-    if "name" in args:
-        query_args["name"] = args.get("name")
-    if "type" in args:
-        node_type = args.get("type")
-        if node_type.lower() == "host":
-            query_args["_cls"] = "Node.Host"
-        elif node_type.lower() == "group":
-            query_args["_cls"] = "Node.Group"
-    o_nodes = Node.objects(**query_args)
-    resp.add_result(o_nodes)
-    return resp.get_response()
-
-@node_pages.route('/api/v1/inventory/nodes', methods=['POST'])
-@login_required
-def post_nodes():
-    resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
-
-    query_args = dict()
-    if "name" in args:
-        query_args["name"] = args.get("name")
+    if "name" in args:     
+        if boolean_parser(args.get("regex",False)):
+            regex_name = re.compile("^{}$".format(args.get("name").strip(" ").lstrip("^").rstrip("$")))
+            query_args["name"] = regex_name
+        else:
+            regex_name = re.compile(r"^{}$".format(re.escape(args.get("name")).replace("\*",".*")))
+            query_args["name"] = regex_name
     if "type" in args:
         node_type = args.get("type")
         if node_type.lower() == "host":
