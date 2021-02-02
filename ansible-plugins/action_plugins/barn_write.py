@@ -26,7 +26,7 @@ class ActionModule(ActionBase):
         barn_user = module_args.get("barn_user", None)
         barn_password = module_args.get("barn_password", None)
         token = module_args.get("barn_token", None)
-        state = module_args.get("state", None)
+        state = module_args.get("state", "present")
 
         if not barn_url and barn_host and barn_port:
             protocol = "https" if barn_https else "http"
@@ -107,9 +107,13 @@ class ActionModule(ActionBase):
             result["status"] = 503
             result["msg"] = "Connection timeout"
             result["failed"] = True
-        except urllib_error.URLError as e:
+        except urllib_error.URLError as e: #SSL_cert_verificate_error
+            result["status"] = int(e.code) if hasattr(e, 'code') else 503
+            result["msg"] = str(e.reason) if hasattr(e, 'reason') else "Can't connect to barn"
+            result["failed"] = True
+        except urllib_error as e:
             result["status"] = 503
-            result["msg"] = "Can't connect to barn"
+            result["msg"] = e.description if hasattr(e, 'description') else "Can't connect to barn"
             result["failed"] = True
         except Exception as e:
             raise AnsibleActionFail(e)
