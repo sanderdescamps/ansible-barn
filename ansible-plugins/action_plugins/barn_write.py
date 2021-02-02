@@ -38,10 +38,10 @@ class ActionModule(ActionBase):
             barn_url = "{}://{}".format(protocol, barn_url)
         barn_url = barn_url.rstrip("/")
 
-        if barn_host is None:
+        if barn_url is None:
             result['changed'] = False
             result['failed'] = True
-            result['msg'] = "barn_host is required"
+            result['msg'] = "barn_url is required"
             return result
 
         query_args = dict(follow_redirects=True)
