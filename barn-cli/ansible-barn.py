@@ -137,7 +137,7 @@ class Barn(object):
         elif barn_url and not barn_url.startswith("https://") and not barn_url.startswith("http://"):
             protocol = "http" if "barn_https" in config and not barn_https else "https"
             barn_url = "{}://{}".format(protocol, barn_url)
-        barn_url = barn_url.rstrip("/")
+        barn_url = barn_url.rstrip("/") if barn_url else barn_url
 
         return Barn(
             url=barn_url,

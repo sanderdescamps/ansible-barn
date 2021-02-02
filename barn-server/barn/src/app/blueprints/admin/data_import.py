@@ -1,6 +1,7 @@
 from http import HTTPStatus
 import json
 import yaml
+import re
 import logging
 from flask import request, Blueprint, render_template, jsonify, redirect
 from flask_login import login_required
@@ -33,6 +34,12 @@ def put_file_import():
                 resp.add_message("Successfully loaded %s"%(file.filename))
             except json.JSONDecodeError as _:
                 return resp.failed(msg="failed to read json file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
+        elif fileextention.lower() == "ini":
+            try:
+                data = file.read().decode('utf-8')
+                to_add = _convert_ini(data)
+            except Exception:
+                return resp.failed(msg="failed to read ini file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
         else:
             return resp.failed("unsupported extention", changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
 
@@ -88,3 +95,66 @@ def put_file_import():
 
     resp.add_message("Import completed")
     return resp.get_response()
+
+_COMMENT_MARKERS = frozenset((u';', u'#'))
+def _convert_ini(data):
+
+        section_pathern =  re.compile(r'^\[([^:\]\s]+)(?::(\w+))?\]\s*(?:\#.*)?$')
+
+        output_groups = {}
+        output_hosts = {}
+        pending_declarations = {}
+        groupname = 'ungrouped'
+        state = 'hosts'
+        lineno = 0
+        
+        section_dict = {}
+
+
+        for line in str(data).splitlines():
+
+            line = line.strip()
+            # Skip empty lines and comments
+            if not line or line[0] in _COMMENT_MARKERS:
+                continue
+
+            m = section_pathern.match(line)
+            if m:
+                (groupname, state) = m.groups()
+                state = state or 'hosts'
+            elif line.startswith('[') and line.endswith(']'):
+                logging.warning("Invalid section entry: '%s'. Please make sure that there are no spaces" % line + " " +
+                                  "in the section entry, and that there are no other invalid characters")
+            else:
+                section = ":".join((groupname,state))
+                if section in section_dict:
+                    section_dict[section].append(line)
+                else:
+                    section_dict[section] = [line]
+
+        hosts_sections = {key:value for key,value in section_dict.items() if key.endswith("hosts")}
+        children_sections = {key:value for key,value in section_dict.items() if key.endswith("children")}
+        vars_sections = {key:value for key,value in section_dict.items() if key.endswith("vars")}
+
+        for section_title, lines in hosts_sections.items():
+            groupname = section_title.split(":")[0]
+            group_hosts = []
+            for line in lines:
+                name = line.strip().split(" ")[0]
+                output_hosts[name] = dict(name=name, vars={})
+                group_hosts.append(name)
+
+            output_groups[groupname] = dict(name=groupname, hosts=group_hosts)
+    
+        for section_title, lines in children_sections.items():
+            groupname = section_title.split(":")[0]
+            child_groups = [line.strip().split(" ")[0] for line in lines]
+            if groupname not in output_groups: 
+                output_groups[groupname] = dict(name=groupname)
+            output_groups[groupname]["child_groups"] = child_groups
+
+        return dict(
+            hosts=list(output_hosts.values()),
+            groups=list(output_groups.values())
+        )
+
