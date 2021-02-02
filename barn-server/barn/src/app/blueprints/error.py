@@ -29,13 +29,15 @@ def handle_forbidden(e):
     if isinstance(required_permission, Permission):
         needs = getattr(required_permission, "needs", [])
         msg = "Insufficient permissions. Action requires [{}] permissions".format(",".join([str(need.value) for need in needs]))
+        logging.getLogger().warning("Insufficient permissions: {} requires [{}] permissions".format(getattr(current_user,"username","Unknown user"),",".join([str(need.value) for need in needs])))
     else:
         msg = "Insufficient permissions"
+        logging.getLogger().warning("Insufficient permissions: {} has not enough permissions to execute action".format(getattr(current_user,"username","Unknown user")))
     data = dict(
         msg=msg,
         status=403,
     )
-    logging.getLogger().warning("Insufficient permissions: {} requires [{}] permissions".format(getattr(current_user,"username","Unknown user"),",".join([str(need.value) for need in needs])))
+    
     header = {"WWW-Authenticate": 'Basic realm="Login!"'}
     return make_response(jsonify(data), 403, header)
 
