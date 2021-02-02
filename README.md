@@ -79,7 +79,7 @@ add `barn` in the [inventory-enabled](https://docs.ansible.com/ansible/latest/re
 
 Write the full inventory to a json-file. The json-file can directly be read by Ansible. No authentication required. 
 
-    curl -s http://127.0.0.1:5000/inventory_file > test_inventory.json
+    curl -u <username> -s http://127.0.0.1:5000/api/v1/ansible_inventory > test_inventory.json
 
 ### Ansible without DNS server with Barn
 
