@@ -64,7 +64,6 @@ def load_user(user_id):
 def load_user_from_request(l_request):
     auth = l_request.authorization
     token = l_request.headers.get('x-access-tokens', None)
-
     if token is not None and token != "":
         try:
             data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
