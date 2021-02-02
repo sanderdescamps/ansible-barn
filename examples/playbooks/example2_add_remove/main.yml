@@ -22,8 +22,8 @@
     - name: output barn write
       debug: 
         var: "output"
-    
-    - name: barn read
+
+    - name: barn read (https+proxy)
       barn_read:
         barn_url: "https://127.0.0.1:443"
         validate_certs: False
@@ -31,6 +31,7 @@
         barn_password: "testpassword"
       delegate_to: localhost
       register: output
+    
 
     - name: output barn read
       debug: 
