@@ -39,6 +39,7 @@ BARN_CONFIG_PATHS = [
     ]
 ]
 
+
 class Barn(object):
     def __init__(self, url=None, user=None, password=None, token=None, validate_certs=True):
         self.barn_url = url
@@ -52,30 +53,36 @@ class Barn(object):
             follow_redirects=True,
             validate_certs=self.validate_certs
         )
-        headers = headers if headers is not  None else {}
+        headers = headers if headers is not None else {}
         data = data if data is not None else {}
         headers.update({'Content-type': 'application/json'})
         query_args["headers"] = headers
         query_args["data"] = json.dumps(data).encode('utf-8')
 
-        if self.barn_user and self.barn_password:
+        authentication="none"
+        if self.barn_token:
+            authentication="token"
+            query_args["headers"]["x-access-tokens"] = self.barn_token
+        elif self.barn_user and self.barn_password:
+            authentication="userpass"
             query_args["url_username"] = self.barn_user
             query_args["url_password"] = self.barn_password
             query_args["force_basic_auth"] = True
-        elif self.barn_token:
-            query_args["headers"]["x-access-tokens"] = self.barn_token
+
 
         try:
             resp = Request().open(method.upper(), "%s/%s" %
-                               (self.barn_url, path.lstrip('/')), **query_args)
+                                  (self.barn_url, path.lstrip('/')), **query_args)
+            
             result = BarnResult.from_response(resp)
-            result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
+            result["request"] = dict(url="%s/%s" % (self.barn_url, path.lstrip('/')), method=method,authentication=authentication)
             return result
         except (urllib_error.HTTPError, HTTPError) as e:
             try:
                 result = BarnResult.from_dict(json.loads(e.read()))
                 result["status"] = int(getattr(e, 'code', -1))
-                result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
+                result["request"] = dict(
+                    url="%s/%s" % (self.barn_url, path.lstrip('/')), method=method)
                 return result
             except AttributeError:
                 result = BarnResult.from_dict(dict(
@@ -83,15 +90,17 @@ class Barn(object):
                     failed=True,
                     changed=False
                 ))
-                result["request"] = dict(url="%s/%s"%(self.barn_url, path.lstrip('/')), method=method)
-                result.set_main_message("Can't parse API response to json response")
+                result["request"] = dict(
+                    url="%s/%s" % (self.barn_url, path.lstrip('/')), method=method)
+                result.set_main_message(
+                    "Can't parse API response to json response")
                 return result
         return None
 
     def __str__(self):
         output = dict(
             barn_url=self.barn_url,
-            validate_certs = self.validate_certs
+            validate_certs=self.validate_certs
         )
         if self.barn_user and self.barn_password:
             output["barn_user"] = self.barn_user
@@ -99,7 +108,6 @@ class Barn(object):
         if self.barn_token:
             output["barn_token"] = self.barn_token
         return str(output)
-
 
     @classmethod
     def from_config(cls, config):
@@ -140,11 +148,12 @@ class Barn(object):
         )
 
 
-
-
 class BarnContext(dict):
     pass
+
+
 pass_barn_context = click.make_pass_decorator(BarnContext)
+
 
 class BarnResult(dict):
 
@@ -174,19 +183,29 @@ class BarnResult(dict):
             self["msg_list"] = []
         self["msg_list"].append(message)
         return self
-    
+
     @classmethod
     def from_response(cls, response):
-        json_response =  None
+        json_response = None
         try:
             json_response = json.loads(response.read())
+            if "status" not in json_response and response.status:
+                json_response["status"] = response.status
+            
+            json_response["response"] = dict()
+            if hasattr(response, "url"):
+                json_response["response"]["url"] = getattr(response, "url")
+            # if hasattr(response, "headers"):
+            #     json_response["response"]["headers"] = dict(getattr(response, "headers"))
+            # if hasattr(response, "version"):
+            #     json_response["response"]["version"] = getattr(response, "version")
         except json.JSONDecodeError as _:
             json_response = dict(
                 msg="Failed to format the response",
                 failed=True
-                )
+            )
         return BarnResult.from_dict(json_response)
-    
+
     @classmethod
     def from_dict(cls, response_dict):
         result = BarnResult()
@@ -198,70 +217,41 @@ class BarnResult(dict):
 
     def succeed(self):
         status = self.get("status")
-        return True if status and status >= 200 and status <=299 else False
+        return True if status and status >= 200 and status <= 299 else False
 
-    # def status(self):
-    #     return None if self._response is None else self._response.get("status")
-
-    # def results(self):
-    #     return [] if self._response is None else self._response.get("result")
-
-    # def msg(self):
-    #     return self.msg + ([] if self._response is None else self._response.get("msg"))
-
-    # def to_text(self):
-    #     output = []
-    #     if self.succeed():
-    #         output.append("Status: {}".format(click.style("succeeded", fg='green')))
-    #         for result in self.get("result",[]):
-    #             output.append("{}: {}".format(result.get("type","unknown").upper(),result.get("name")))
-    #             if len(self.get("results",[])) == 1 and len(result.get("vars",[])) > 0:
-    #                 for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
-    #                     output.append("  %s"%(line))
-
-    #     else:
-    #         output.append("Status: {}".format(click.style("failed", fg='red')))
-    #         output.append("Status code: {}".format(self.get("status")))
-    #         messages = self.get("msg_list")
-    #         if len(messages) > 1:
-    #             output.append("Message:")
-    #             for m in messages:
-    #                 output.append("  - {}".format(m))
-    #         elif len(messages) == 1:
-    #             output.append("Message: {}".format(messages[0]))
-    #         else:
-    #             output.append("Message: No message")
-
-    #     return "\n".join(output)
-    
     def to_text(self):
         output = []
         if self.succeed():
-            output.append("Status: {}".format(click.style("succeeded", fg='green')))
+            output.append("Status: {}".format(
+                click.style("succeeded", fg='green')))
         else:
             output.append("Status: {}".format(click.style("failed", fg='red')))
         output.append("Status code: {}".format(self.get("status")))
 
-        output.append("Changed: {}".format(str(self.get("changed", "unknown"))))
+        output.append("Changed: {}".format(
+            str(self.get("changed", "unknown"))))
 
-        
-        msg_list = self.get("msg_list") or [self.get("msg")] if self.get("msg",[]) != [] else None or []
-        if self.get("msg_list",[]) != []:
+        msg_list = self.get("msg_list") or ([self.get("msg")] if self.get("msg", []) != [] else None) or []
+        if self.get("msg_list", []) != []:
             output.append("Message:")
             for msg in msg_list:
-                output.append("  {}".format(click.style(msg, bold=(self.get("msg") == msg))))
-        elif self.get("msg","") != "":
-            output.append("  Message: {}".format(click.style(self.get("msg"), bold=True)))
+                output.append("  {}".format(click.style(
+                    msg, bold=(self.get("msg") == msg))))
+        elif self.get("msg", "") != "":
+            output.append("  Message: {}".format(
+                click.style(self.get("msg"), bold=True)))
 
         if self.get("result", []) != []:
             output.append("Results: ")
-            for result in self.get("result",[]):
-                if result.get("type","").upper() == "USER":
-                    output.append("  {}: {} ({})".format(result.get("type").upper(), result.get("username"),result.get("name")))
+            for result in self.get("result", []):
+                if result.get("type", "").upper() == "USER":
+                    output.append("  {}: {} ({})".format(result.get(
+                        "type").upper(), result.get("username"), result.get("name")))
                 else:
-                    output.append("  {}: {}".format(result.get("type","unknown").upper(), result.get("name")))
-                if len(self.get("results", [])) == 1 and len(result.get("vars",[])) > 0:
-                    for line in str(yaml.dump(result.get("vars",[]))).split("\n"):
+                    output.append("  {}: {}".format(result.get(
+                        "type", "unknown").upper(), result.get("name")))
+                if len(self.get("results", [])) == 1 and len(result.get("vars", [])) > 0:
+                    for line in str(yaml.dump(result.get("vars", []))).split("\n"):
                         output.append("    {}".format(line))
 
         return "\n".join(output)
@@ -270,17 +260,21 @@ class BarnResult(dict):
         return json.dumps(self, indent=indent)
 
     def to_yaml(self, indent=4):
-        return yaml.dump(self, indent=indent)
+        return yaml.dump(dict(self), indent=indent)
+
 
 def _load_barn_config_file(path):
     barn_vars = {}
     try:
-        with open(path,'r') as file:
+        with open(path, 'r') as file:
             barn_vars = yaml.load(file, Loader=yaml.FullLoader)
     except yaml.YAMLError as e:
-        msg = getattr(e, 'problem') if hasattr(e, 'problem') else "unknown problem"
-        click.secho("Failed to load config: {} ({})".format(path, msg), fg="red")
+        msg = getattr(e, 'problem') if hasattr(
+            e, 'problem') else "unknown problem"
+        click.secho("Failed to load config: {} ({})".format(
+            path, msg), fg="red")
     return barn_vars
+
 
 def _load_barn_system_config():
     barn_vars = {}
@@ -292,8 +286,6 @@ def _load_barn_system_config():
     return barn_vars
 
 
-
-
 @click.group(context_settings={'help_option_names': ['-h', '--help']})
 @click.option('--ask-barn-user', help='Ask for barn user', is_flag=True, default=False, show_default=True)
 @click.option('--ask-barn-password', help='Ask for barn password', is_flag=True, default=False, show_default=True)
@@ -302,34 +294,56 @@ def _load_barn_system_config():
 @click.option('-h', '--barn-url', '--url', help='Barn url', show_default=True)
 @click.option('-t', '--barn-token', '--token', help='Barn authentication token')
 @click.option('-c', '--config-file', help='path to config file')
+@click.option('--skip-auth', help='debug option to skip authentication', is_flag=True, default=False, show_default=True)
 @click.pass_context
 def main(ctx=None, **kwargs):
-    barn_vars = None
+    barn_vars = {}
+
+    barn_vars_file = {}
     if "config-file" in kwargs:
-        barn_vars = _load_barn_config_file(kwargs.get("config-file"))
-    else:
-        barn_vars = _load_barn_system_config()
+        barn_vars_file = _load_barn_config_file(kwargs.get("config-file"))
 
-    barn_user = kwargs.get("barn_user", None)
-    if barn_user:
-        barn_vars["barn_user"] = barn_user
-    elif kwargs.get("ask_barn_user"):
-        barn_vars["barn_user"] = click.prompt('Barn username', type=str)
-
-    barn_password = kwargs.get("barn_password", None)
-    if barn_password:
-        barn_vars["barn_password"] = barn_password
-    elif kwargs.get("ask_barn_password"):
-        barn_vars["barn_password"] = click.prompt(
+    barn_vars_system = _load_barn_system_config()
+    barn_vars_env = {key: value for key,
+                     value in os.environ.items() if key.startswith("BARN_")}
+    barn_vars_cli = kwargs
+    if kwargs.get("ask_barn_user"):
+        barn_vars_cli["barn_user"] = click.prompt('Barn username', type=str)
+    if kwargs.get("ask_barn_password"):
+        barn_vars_cli["barn_password"] = click.prompt(
             'Barn password', hide_input=True, type=str)
 
-    barn_url = kwargs.get("barn_url")
-    if barn_url:
-        barn_vars["barn_url"] = barn_url
+    barn_user = barn_vars_cli.get("barn_user") or barn_vars_env.get(
+        "BARN_USER") or barn_vars_file.get("barn_user") or barn_vars_system.get("barn_user")
+    barn_password = barn_vars_cli.get("barn_password") or barn_vars_env.get(
+        "BARN_PASSWORD") or barn_vars_file.get("barn_password") or barn_vars_system.get("barn_password")
+    if barn_user and barn_password:
+        barn_vars["barn_user"] = barn_user
+        barn_vars["barn_password"] = barn_password
     
-    barn_token = kwargs.get("barn_token")
+    barn_token = barn_vars_cli.get("barn_token") or barn_vars_env.get(
+        "BARN_TOKEN") or barn_vars_file.get("barn_token") or barn_vars_system.get("barn_token")
     if barn_token:
         barn_vars["barn_token"] = barn_token
+
+
+    if barn_vars_cli.get("barn_url"):
+        barn_vars["barn_url"] = barn_vars_cli.get("barn_url")
+        barn_vars["validate_certs"] = barn_vars_cli.get("validate_certs", True)
+    elif barn_vars_env.get("BARN_URL"):
+        barn_vars["barn_url"] = barn_vars_env.get("BARN_URL")
+        barn_vars["validate_certs"] = barn_vars_env.get("BARN_VALIDATE_CERTS", True)
+    elif barn_vars_file.get("barn_url"):
+        barn_vars["barn_url"] = barn_vars_file.get("barn_url")
+        barn_vars["validate_certs"] = barn_vars_file.get("validate_certs", True)
+    elif barn_vars_system.get("barn_url"):
+        barn_vars["barn_url"] = barn_vars_system.get("barn_url")
+        barn_vars["validate_certs"] = barn_vars_system.get("validate_certs", True)
+
+    if kwargs.get("skip_auth"):
+        barn_vars.pop("barn_password",None)
+        barn_vars.pop("barn_user",None)
+
     barn = Barn.from_config(barn_vars)
     ctx.obj = BarnContext(barn=barn)
 
@@ -350,6 +364,28 @@ def add(barn_context=None):
 @pass_barn_context
 def delete(barn_context=None):
     pass
+
+
+@main.command(name="login")
+@click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
+@click.option('--json', '-j', help="Same as --format=json", is_flag=True, default=False)
+@click.option('--yaml', help="Same as --format=yaml", is_flag=True, default=False)
+@click.argument('username', required=False)
+@pass_barn_context
+def login(barn_context=None, username=None, **kwargs):
+    barn = barn_context.get("barn")
+    barnresult = barn.request("POST", "/token")
+    token = barnresult.get("token")
+
+    if kwargs.get("format") == "json" or kwargs.get("json"):
+        click.echo(barnresult.to_json())
+    elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
+        click.echo(barnresult.to_yaml())
+    else:
+        barnresult = barnresult.add_message("Run following command to store token to enviromnemt variables:")
+        barnresult = barnresult.add_message("# export BARN_TOKEN={token}".format(token=token))
+        click.echo(barnresult.to_text())
+
 
 
 @get.command(name="host")
@@ -496,6 +532,7 @@ def delete_host(barn_context=None, name=None, **kwargs):
     else:
         click.echo(barnresult.to_text())
 
+
 @delete.command(name="group")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
@@ -515,6 +552,7 @@ def delete_group(barn_context=None, name=None, **kwargs):
         click.echo(barnresult.to_yaml())
     else:
         click.echo(barnresult.to_text())
+
 
 @main.command(name="test", context_settings=dict(ignore_unknown_options=True))
 @pass_barn_context
@@ -546,44 +584,51 @@ def init(barn_context=None, **kwargs):
     if confirmed:
         barn.request("PUT", "/init")
 
+
 @add.command(name="user")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
 @click.argument('username', default=None, required=False)
-@click.option('--name','-n', help="Full name of the user")
-@click.option('--role','-r', help="User role", multiple=True)
-@click.option('--password','-p', help="User password")
-@click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
+@click.option('--name', '-n', help="Full name of the user")
+@click.option('--role', '-r', help="User role", multiple=True)
+@click.option('--password', '-p', help="User password")
+@click.option('--wizard', '-w', help="Launch user wizard in cli", is_flag=True, default=False)
 @pass_barn_context
 def add_user(barn_context=None, username=None, **kwargs):
     allowed_user_args = ["name", "active", "password", "password_hash"]
-    data = {key:value for key,value in kwargs.items() if key in allowed_user_args and value}
+    data = {key: value for key, value in kwargs.items(
+    ) if key in allowed_user_args and value}
     if username:
         data["username"] = username
 
-    if kwargs.get("wizard", False) or not username :
+    if kwargs.get("wizard", False) or not username:
         click.echo("User wizard")
         if not data.get("username"):
-            data["username"] = click.prompt('  Username', type=str, default=None)
+            data["username"] = click.prompt(
+                '  Username', type=str, default=None)
         if not data.get("name"):
-            data["name"] = click.prompt('  Name', type=str, default="", show_default=False)
+            data["name"] = click.prompt(
+                '  Name', type=str, default="", show_default=False)
         if not kwargs.get("role"):
             data["roles"] = []
             while(True):
-                role = click.prompt('  Role {}'.format(len(data["roles"])+1), type=str, default="", show_default=False)
+                role = click.prompt('  Role {}'.format(
+                    len(data["roles"])+1), type=str, default="", show_default=False)
                 if role != "":
-                    data["roles"].append(role.replace(" ",""))
+                    data["roles"].append(role.replace(" ", ""))
                 else:
                     break
         if not data.get("password") and not data.get("password_hash"):
             while(True):
-                password = click.prompt('  Password', hide_input=True, type=str)
+                password = click.prompt(
+                    '  Password', hide_input=True, type=str)
                 if password == click.prompt('  Repeat password', hide_input=True, type=str):
-                    data["password_hash"] = generate_password_hash(password, method='sha256')
+                    data["password_hash"] = generate_password_hash(
+                        password, method='sha256')
                     break
                 else:
-                    click.secho("   Sorry, passwords do not match.",fg='red')
+                    click.secho("   Sorry, passwords do not match.", fg='red')
 
     barn = barn_context.get("barn")
     barnresult = barn.request("PUT", "/api/v1/admin/users/add", data=data)
@@ -594,18 +639,19 @@ def add_user(barn_context=None, username=None, **kwargs):
     else:
         click.echo(barnresult.to_text())
 
+
 @get.command(name="user")
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
 @click.argument('username', default=None, required=False)
-@click.option('--name','-n', help="Full name of the user")
-@click.option('--role','-r', help="User role", multiple=True)
-@click.option('--wizard','-w', help="Launch user wizard in cli", is_flag=True, default=False)
+@click.option('--name', '-n', help="Full name of the user")
+@click.option('--role', '-r', help="User role", multiple=True)
+@click.option('--wizard', '-w', help="Launch user wizard in cli", is_flag=True, default=False)
 @pass_barn_context
 def get_user(barn_context=None, username=None, **kwargs):
     data = dict()
-    if username :
+    if username:
         data["username"] = username
     if kwargs.get("name"):
         data["name"] = username or kwargs.get("name")
@@ -617,6 +663,7 @@ def get_user(barn_context=None, username=None, **kwargs):
         click.echo(barnresult.to_yaml())
     else:
         click.echo(barnresult.to_text())
+
 
 if __name__ == '__main__':
     main()
