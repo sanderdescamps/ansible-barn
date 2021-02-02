@@ -43,10 +43,28 @@ The inventory plugin will search for the connection info in following files.
 
 **Example barn.yml**
 
+    ---
     plugin: barn
     barn_user: sdescamps
     barn_password: testpassword
-    barn_hostname: 127.0.0.1
+    barn_url: https://127.0.0.1:443
+    validate_certs: false
+    fetch_variables: false
+
+
+    ---
+    plugin: barn
+    barn_user: sdescamps
+    barn_password: testpassword
+    barn_host: 127.0.0.1            #barn_host is deprecated in favor of barn_url
+    barn_port: 5000                 #barn_port is deprecated in favor of barn_url
+    fetch_variables: false
+
+    ---
+    plugin: barn
+    barn_user: sdescamps
+    barn_password: testpassword
+    barn_hostname: 127.0.0.1        #barn_hostname is deprecated in favor of barn_url
     barn_port: 5000
     fetch_variables: false
 
