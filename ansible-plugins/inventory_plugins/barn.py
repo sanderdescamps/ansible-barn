@@ -1,15 +1,19 @@
-# Copyright (c) 2017 Ansible Project
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
-
 from __future__ import (absolute_import, division, print_function)
-from ansible.plugins.inventory import BaseInventoryPlugin
-from ansible.module_utils.urls import urllib_error
-from ansible.module_utils.urls import Request
-from ansible.errors import AnsibleParserError
-import json
-import re
-import os
 __metaclass__ = type
+
+
+
+import os
+import re
+import json
+from ansible.utils.vars import merge_hash
+from ansible.config.manager import ensure_type
+from ansible.errors import AnsibleParserError
+from ansible.module_utils.urls import Request
+from ansible.module_utils.urls import urllib_error
+from ansible.plugins.inventory import BaseInventoryPlugin
+
+
 
 DOCUMENTATION = '''
     inventory: barn
@@ -33,6 +37,31 @@ EXAMPLES = '''
         barn_port: 5000
         fetch_variables: false
 '''
+
+BARN_CONFIG_PATHS = [
+    [
+        os.path.join(os.getcwd(), "barn.yml"),
+        os.path.join(os.getcwd(), "barn.yaml"),
+        os.path.join(os.getcwd(), "barn.json")
+    ], [
+        os.path.join(os.path.expanduser("~"), ".barn.yml"),
+        os.path.join(os.path.expanduser("~"), ".barn.yaml"),
+        os.path.join(os.path.expanduser("~"), ".barn.json")
+    ], [
+        os.path.join("/etc/barn/", "barn.yml"),
+        os.path.join("/etc/barn/", "barn.yaml"),
+        os.path.join("/etc/barn/", "barn.json")
+    ]
+]
+
+DEFAULT_BARN_VARS = dict(
+    barn_user="admin",
+    barn_password="admin",
+    barn_hostname="127.0.0.1",
+    barn_port="5000",
+    fetch_variables=False
+)
+
 
 class InventoryModule(BaseInventoryPlugin):
 
@@ -63,7 +92,6 @@ class InventoryModule(BaseInventoryPlugin):
             fetch_variables=False
         )
 
-
     def verify_file(self, path):
         '''Checks if the barn config file is a valid config file.
         '''
@@ -74,68 +102,99 @@ class InventoryModule(BaseInventoryPlugin):
         elif super(InventoryModule, self).verify_file(path) and self._validate_connection_file(path):
             self.display.vv("Using Barn as inventory source")
             valid = True
-        else: 
+        else:
             self.display.vv("Unable to parse Barn Inventory")
         return valid
 
-
     def parse(self, inventory, loader, path, cache=True):
         ''' parses the inventory file '''
+        barn_vars = {}
+        if path.endswith("@barn"):
+            for path_set in BARN_CONFIG_PATHS:
+                for path in path_set:
+                    if os.path.exists(path):
+                        try:
+                            self.display.vv("Use config file: {}".format(path))
+                            barn_vars = merge_hash(loader.load_from_file(
+                                path, cache=False), barn_vars)
+                        except Exception as e:
+                            raise AnsibleParserError(e)
+                        break
+        else:
+            barn_vars = loader.load_from_file(path, cache=False)
 
-        
-        if os.path.exists(os.path.join(os.environ['HOME'],".barn.yml")): 
-            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yml"), loader)
-        elif os.path.exists(os.path.join(os.environ['HOME'],".barn.yaml")): 
-            self._load_connection_file(os.path.join(os.environ['HOME'],".barn.yaml"), loader)
-        if os.path.exists("/etc/barn/barn.yml"):
-            self._load_connection_file("/etc/barn/barn.yml", loader)
-        elif os.path.exists("/etc/barn/barn.yaml"):
-            self._load_connection_file("/etc/barn/barn.yaml", loader)
-        
-        if not path.endswith("@barn"):
-            self._load_connection_file(path, loader)
+        barn_url = barn_vars.get("barn_url")
+        barn_host = barn_vars.get(
+            "barn_host", barn_vars.get("barn_hostname", None))
+        barn_port = barn_vars.get("barn_port", 443)
+        barn_https = ensure_type(barn_vars.get("barn_https", True), 'bool')
+        validate_certs = barn_vars.get("validate_certs", True)
+        barn_user = barn_vars.get("barn_user", None)
+        barn_password = barn_vars.get("barn_password", None)
+        token = barn_vars.get("barn_token", None)
 
-        query_args = dict()
+        if not barn_url and barn_host and barn_port:
+            protocol = "https" if barn_https else "http"
+            barn_url = "{}://{}:{}".format(protocol, barn_host, barn_port)
+            self.display.warning(
+                "The options barn_host and barn_port are deprecated. Please use barn_url instead.")
+        elif barn_url and not barn_url.startswith("https://") and not barn_url.startswith("http://"):
+            protocol = "http" if "barn_https" in barn_vars and not barn_https else "https"
+            barn_url = "{}://{}".format(protocol, barn_url)
+        barn_url = barn_url.rstrip("/")
+
+        if not barn_url:
+            return
+
+        query_args = dict(
+            follow_redirects=True,
+            validate_certs=validate_certs
+        )
         query_args["headers"] = {'Content-type': 'application/json'}
-
-        if self.barn_vars.get("barn_user", False) and self.barn_vars.get("barn_password", False):
-            query_args["url_username"] = self.barn_vars.get("barn_user")
-            query_args["url_password"] = self.barn_vars.get("barn_password")
+        if token:
+            query_args["headers"]["x-access-tokens"] = token
+        if barn_user:
+            query_args["url_username"] = barn_user
             query_args["force_basic_auth"] = True
-        elif self.barn_vars.get("token", False):
-            query_args["headers"]["x-access-tokens"] = self.barn_vars.get(
-                "token")
+        if barn_password:
+            query_args["url_password"] = barn_password
+            query_args["force_basic_auth"] = True
 
         hosts = []
         groups = []
         try:
-            self.display.vvv("Connect to http://%s:%s/hosts" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
-            r = Request().open("GET", "http://%s:%s/hosts" % (
-                self.barn_vars.get("barn_hostname"),
-                self.barn_vars.get("barn_port")), **query_args)
+            self.display.vvv(
+                "Connect to {}/api/v1/inventory/hosts".format(barn_url))
+            r = Request().open("GET", "{}/api/v1/inventory/hosts".format(barn_url), **query_args)
             hosts = json.loads(r.read()).get("result")
-            self.display.vvv(json.dumps(hosts))
-            self.display.vvv("Connect to http://%s:%s/groups" % (self.barn_vars.get("barn_hostname"),self.barn_vars.get("barn_port")))
-            r = Request().open("GET", "http://%s:%s/groups" % (
-                self.barn_vars.get("barn_hostname"),
-                self.barn_vars.get("barn_port")), **query_args)
+            self.display.vvv(json.dumps(dict(hosts=hosts)))
+
+            self.display.vvv(
+                "Connect to {}/api/v1/inventory/groups".format(barn_url))
+            r = Request().open("GET", "{}/api/v1/inventory/groups".format(barn_url), **query_args)
             groups = json.loads(r.read()).get("result")
-            self.display.vvv(json.dumps(groups))
+            self.display.vvv(json.dumps(dict(groups=groups)))
         except urllib_error.HTTPError as e:
             try:
                 body = json.loads(e.read())
             except AttributeError:
                 body = {}
-            raise AnsibleParserError(message=body.get("error", ""))
+
+            raise AnsibleParserError(message="{}: {}".format(
+                body.get("status", "Unknown Error"), body.get("msg", "")))
+        except urllib_error.URLError as e:  # SSL_cert_verificate_error
+            msg = "{}: {}".format(e.code if hasattr(e, 'code') else "Unknown Error", str(
+                e.reason) if hasattr(e, 'reason') else "Can't connect to barn")
+            raise AnsibleParserError(message=msg)
 
         for h in hosts:
             inventory.add_host(h.get("name"))
-            if self.barn_vars.get("fetch_variables", False):
+            if barn_vars.get("fetch_variables", False):
                 for k, v in h.get("vars", {}).items():
                     inventory.set_variable(h.get("name"), k, v)
         for g in groups:
             inventory.add_group(g.get("name"))
-            if self.barn_vars.get("fetch_variables", False):
+            if barn_vars.get("fetch_variables", False):
                 for k, v in g.get("vars", {}).items():
                     inventory.set_variable(g.get("name"), k, v)
             for h in g.get("hosts", []):

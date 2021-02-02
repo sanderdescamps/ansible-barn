@@ -2,15 +2,15 @@
 - name: Test playbook for custom module
   gather_facts: False
   hosts: 
-      - srvdns01.myhomecloud.be
+      - testhost.myhomecloud.be
   tasks:
     - name: barn write
       barn_write:
         barn_host: "127.0.0.1"
-        barn_https: false
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        barn_port: 5000
+        barn_port: 443
+        validate_certs: False
         state: present
         vars: 
           test: sdqf
@@ -22,24 +22,35 @@
     - name: output barn write
       debug: 
         var: "output"
-    
-    - name: barn read
+
+    - name: barn read (https+proxy)
       barn_read:
-        barn_host: "127.0.0.1"
-        barn_https: false
+        barn_url: "https://127.0.0.1:443"
+        validate_certs: False
         barn_user: "sdescamps"
         barn_password: "testpassword"
-        # barn_token: "qmsdklfjqsdmlkfjqsdmlkfjqmsdlkfjqmlskdjf"
-        barn_port: 5000
-        exclude: ip_address
-        load_to_facts: True
       delegate_to: localhost
       register: output
+    
 
     - name: output barn read
       debug: 
         var: "output"
-        
+
+    - name: Remove new host
+      barn_write:
+        barn_host: "127.0.0.1"
+        barn_user: "sdescamps"
+        barn_password: "testpassword"
+        validate_certs: False
+        barn_port: 443
+        state: absent
+      register: output 
+
+    - name: Output host removal
+      debug: 
+        var: "output"
+     
     - name: print facts
       debug: 
         var: hostvars[inventory_hostname]

@@ -1,3 +1,4 @@
+#!/bin/bash
 mkdir -p ~/.ansible/plugins/inventory
 mkdir -p ~/.ansible/plugins/modules
 mkdir -p ~/.ansible/plugins/action

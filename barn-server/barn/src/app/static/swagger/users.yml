@@ -1,0 +1,136 @@
+users:
+  get:
+    summary: 
+    tags:
+      - user managment
+    security:
+      - basicAuth: []
+    parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          required: false
+          description: Full name of the user. 
+        - in: query
+          name: username
+          schema:
+            type: string
+          required: false
+          description: Username of the user. Must be unique. 
+        - in: query
+          name: active
+          schema:
+            type: boolean
+          required: false
+          description: True when the user is active
+        - in: query
+          name: public_id
+          schema:
+            type: string
+          required: false
+          description: Unique ID of the user
+    responses:
+      "200":
+        $ref: './swagger.yml#/components/responses/DefaultResponse'
+      '401':
+        $ref: './swagger.yml#/components/responses/UnauthorizedError'
+  post:
+    summary: Returns list of hosts
+    tags:
+      - user managment
+    security:
+      - basicAuth: []
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                title: Name
+                type: string
+                description: Full name of the user. 
+              username:
+                title: Username
+                type: string
+                description: Username of the user. Must be unique. 
+              active:
+                title: Active user
+                type: boolean
+                description: True when the user is active
+              public_id:
+                title: User ID
+                type: string
+                description: Unique ID of the user
+    responses:
+      "200":
+        $ref: './swagger.yml#/components/responses/DefaultResponse'
+      '401':
+        $ref: './swagger.yml#/components/responses/UnauthorizedError'
+  put:
+    summary: Add/Update user
+    description: See /api/v1/admin/users/present for more details
+    tags:
+      - user managment
+users_put:
+  put:
+    summary: Add/Update user
+    tags:
+      - user managment
+    security:
+      - basicAuth: []
+    parameters:
+      - in: path
+        name: action
+        default: "present"
+        schema:
+          type: string
+          enum: 
+            - "add" 
+            - "update" 
+            - "present"
+            - "passwd"
+        description: |
+          Impact of the PUT method
+
+          * **add**: Add new user. If user already exists you will get an error. 
+          * **update**: Modify an existing user. If host does not exists you will get an error.
+          * **present**: Make sure user exist.
+          * **passwd**: Change user password
+    requestBody:
+      required: false
+      description: Define changes via json object
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Full name of the user
+                example: John Doe
+              username:
+                type: string
+                description: Username of the user. Must be unique.
+                example: jdoe
+              active:
+                type: boolean
+                description: Username of the user. Must be unique.
+              roles:
+                type: array
+                items:
+                  type: string
+                default: []
+              password:
+                type: string
+                description: Password
+
+            required:
+              - username
+    responses:
+      "200":
+        $ref: './swagger.yml#/components/responses/DefaultResponse'
+      '401':
+        $ref: './swagger.yml#/components/responses/UnauthorizedError'

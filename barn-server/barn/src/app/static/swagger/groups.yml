@@ -1,5 +1,7 @@
 get:
   summary: Get list of groups
+  tags:
+    - inventory
   security:
     - basicAuth: []
   parameters:
@@ -8,9 +10,15 @@ get:
         schema:
           type: string
         required: false
-        description: search on name of group
+        description: Filter on name of group. Use '*' as a wildcard. 
       - in: query
-        name: parrent_vars
+        name: regex
+        schema:
+          type: boolean
+        required: false
+        description: Name is regular expression
+      - in: query
+        name: parent_vars
         schema:
           type: string
         required: false
@@ -22,21 +30,10 @@ get:
       $ref: './swagger.yml#/components/responses/UnauthorizedError'
 post:
   summary: Search for groups
+  tags:
+    - inventory
   security:
     - basicAuth: []
-  parameters:
-      - in: query
-        name: name
-        schema:
-          type: string
-        required: false
-        description: search on name of node
-      - in: query
-        name: parrent_vars
-        schema:
-          type: string
-        required: false
-        description: (under construction) Return also the vars from the host its groups 
   requestBody:
     required: false
     content:
@@ -47,6 +44,10 @@ post:
             name:
               type: string
               description: Name of the group
+            regex:
+              title: Name is regular expression
+              type: boolean
+              description: The name is a regular expression. The regular expression need to match the entire name.
             groups:
               type: array
               items:
@@ -62,6 +63,8 @@ post:
       $ref: './swagger.yml#/components/responses/UnauthorizedError'
 put:
   summary: Add/Update group
+  tags:
+    - inventory
   security:
     - basicAuth: []
   requestBody:
@@ -78,12 +81,66 @@ put:
               type: array
               items:
                 type: string
-              description: Confiure the group its child groups
+              description: Alias for *child_groups_present*
+            child_groups_present:
+              type: array
+              items:
+                type: string
+              description: Make sure a certain list of child-groups is present
+            child_groups_set:
+              type: array
+              items:
+                type: string
+              description: Set a fixed list of child-groups. Remove all the others. 
+            child_groups_absent:
+              type: array
+              items:
+                type: string
+              description: Remove child-groups if they are present
+            create_groups:
+              type: boolean
+              default: true
+              description: When an unexisting group is used as child_groups or parent_group it will be created. 
             hosts:
               type: array
               items:
                 type: string
-              description: Congigure the hosts which belong to the group
+              description: Alias for hosts_present
+            hosts_present:
+              type: array
+              items:
+                type: string
+              description: Add a host to a group
+            hosts_set:
+              type: array
+              items:
+                type: string
+              description: Set a fixed list of hosts to a group. Remove all other hosts from the groups. 
+            hosts_absent:
+              type: array
+              items:
+                type: string
+              description: Remove a host from a group
+            parent_groups:
+              type: array
+              items:
+                type: string
+              description: Alias for parent_groups_present
+            parent_groups_present:
+              type: array
+              items:
+                type: string
+              description: Set the group as a child-group of each parent-group. All other parent-groups will remain.
+            parent_groups_set:
+              type: array
+              items:
+                type: string
+              description: Set the group as a child-group of each parent-group. All other parent-groups will be removed.
+            parent_groups_absent:
+              type: array
+              items:
+                type: string
+              description: Remove group as child-group from the each parent-group
             vars:
               type: object
               description: Variables to add or update

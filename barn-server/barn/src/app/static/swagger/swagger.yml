@@ -22,15 +22,19 @@ paths:
                   token:
                     type: string
                     description: Authentication token
-  /register:
+  /api/v1/admin/register:
     get:
       summary: Register new user
       responses:
         "200":
           description: OK
-  /inventory_file:
+  /api/v1/ansible_inventory:
     get:
-      summary: Return the inventory file
+      summary: Return an json Ansible inventory file
+      description: |
+        Alias: 
+          - https://{hostname}:{port}/ansible_inventory
+          - https://{hostname}:{port}/inventory_file
       responses:
         "200":
           description: OK
@@ -67,7 +71,7 @@ paths:
             application/json:
                   schema:
                     type: object
-  /export:
+  /api/v1/admin/export:
     get:
       summary: Export current hosts and groups
       parameters:
@@ -96,12 +100,18 @@ paths:
             application/json:
                   schema:
                     type: object
-  /nodes:
+  /api/v1/inventory/nodes:
     $ref: "./nodes.yml"
-  /hosts:
+  /api/v1/inventory/hosts:
     $ref: "./hosts.yml"
-  /groups:
+  /api/v1/inventory/hosts/{action}:
+    $ref: "./hosts_put.yml"
+  /api/v1/inventory/groups:
     $ref: "./groups.yml"
+  /api/v1/admin/users:
+    $ref: "./users.yml#/users"
+  /api/v1/admin/users/{action}:
+    $ref: "./users.yml#/users_put"
 components:
   securitySchemes:
     basicAuth:
@@ -126,7 +136,13 @@ components:
                   msg:
                     type: string
                     default: ""
-                    description: Output message in case of an error
+                    description: Main message which provides more details about the status
+                  msg_list:
+                    type: array
+                    items:
+                      type: string
+                    default: []
+                    description: List of all messages, the main message will be set in the 'msg' field
                   results:
                     type: array
                     items:

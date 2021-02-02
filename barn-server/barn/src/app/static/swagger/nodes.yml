@@ -1,5 +1,7 @@
 get:
-  summary: Get list of nodes
+  summary: Get List for groups and/or hosts (=nodes)
+  tags:
+    - inventory
   security:
     - basicAuth: []
   parameters:
@@ -8,7 +10,13 @@ get:
         schema:
           type: string
         required: false
-        description: search on name of node
+        description: Filter on name of node. Use '*' as a wildcard.
+      - in: query
+        name: regex
+        schema:
+          type: boolean
+        required: false
+        description: Name is regular expression
       - in: query
         name: type
         schema:
@@ -18,7 +26,31 @@ get:
             - "group"
         required: false
         description: Type of the node. (ex. host, group,..)
-
+  responses:
+    "200":
+      $ref: './swagger.yml#/components/responses/DefaultResponse'
+    '401':
+      $ref: './swagger.yml#/components/responses/UnauthorizedError'
+post:
+  summary: Get List for groups and/or hosts (=nodes)
+  tags:
+    - inventory
+  security:
+    - basicAuth: []
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Name of the node
+            regex:
+              title: Name is regular expression
+              type: boolean
+              description: The name is a regular expression. The regular expression need to match the entire name.
   responses:
     "200":
       $ref: './swagger.yml#/components/responses/DefaultResponse'

@@ -1,17 +1,16 @@
 import json
 import yaml
 from flask import request, Blueprint, make_response
+from flask_login import login_required
 from app.models import Host, Group
 from app.utils import merge_args_data, remove_empty_fields
-from app.auth import authenticate
 
 
 export_pages = Blueprint('export', __name__)
 
-
-@export_pages.route('/export', methods=['GET'])
-@authenticate("guest")
-def get_export(current_user=None):
+@export_pages.route('/api/v1/admin/export', methods=['GET'])
+@login_required
+def get_export():
     export_data = dict(hosts=[], groups=[])
     args = merge_args_data(request.args, request.get_json(silent=True))
 

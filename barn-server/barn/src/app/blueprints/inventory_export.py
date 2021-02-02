@@ -1,13 +1,13 @@
 from flask import jsonify, Blueprint
+from flask_login import login_required
 from app.models import Host, Group
-from app.auth import authenticate
 
 inventory_pages = Blueprint('inventory', __name__)
 
 
-@inventory_pages.route('/inventory_file', methods=['GET'])
-@authenticate("guest")
-def get_ansible_inventory_file(current_user=None):
+@inventory_pages.route('/api/v1/ansible_inventory', methods=['GET'])
+@login_required
+def get_ansible_inventory_file():
     o_hosts = Host.objects()
     d_hosts = {}
     for host in o_hosts:

@@ -1,66 +1,94 @@
 import uuid
 from abc import abstractmethod
-from mongoengine import Document, StringField, DictField, ListField, ReferenceField
+from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
+from flask_login.mixins import UserMixin
+from flask_principal import RoleNeed
 
 
-class Role(Document):
-    name = StringField(required=True)
-    description = StringField()
+# class Role(Document):
+#     name = StringField(required=True)
+#     description = StringField()
+#     # methode = StringField(required=True)
 
-    def __unicode__(self):
-        return self.name
+#     def __unicode__(self):
+#         return self.name
 
-    def __repr__(self):
-        return str(self.name)
+#     def __repr__(self):
+#         return str(self.name)
 
-    def __str__(self):
-        return str(self.name)
+#     def __str__(self):
+#         return str(self.name)
 
-    def __eq__(self, other):
-        if other.__class__ == str:
-            return str(self.name).lower() == other.lower()
-        else:
-            return (
-                self.__class__ == other.__class__ and
-                str(self.name).lower() == str(other.name).lower()
-            )
+#     def __eq__(self, other):
+#         if other.__class__ == str:
+#             return str(self.name).lower() == other.lower()
+#         else:
+#             return (
+#                 self.__class__ == other.__class__ and
+#                 str(self.name).lower() == str(other.name).lower()
+#             )
+
+#     def to_tuple(self):
+#         return RoleNeed(**{'value':self.name})
 
 
-class User(Document):
+class User(Document, UserMixin):
     public_id = StringField(default=str(uuid.uuid4()))
     name = StringField()
     username = StringField(required=True, unique=True)
     password_hash = StringField()
-    roles = ListField(ReferenceField(Role))
+    roles = ListField(default=[])
+    active = BooleanField(default=True)
 
     def __init__(self, *args, **kwargs):
         if "password" in kwargs and kwargs.get("password") is not None:
             kwargs["password_hash"] = generate_password_hash(
                 kwargs.pop("password"), method='sha256')
-        if "roles" in kwargs:
-            roles = kwargs.pop("roles")
-            o_roles = []
-            if isinstance(roles, str):
-                roles = roles.split(",")
-            for role in roles:
-                if isinstance(role, str):
-                    o_role = Role.objects(name=role).first()
-                    if o_role:
-                        o_roles.append(o_role)
-                elif isinstance(role, Role):
-                    o_roles.append(role)
-            kwargs["roles"] = o_roles
+        # if "roles" in kwargs:
+        #     roles = kwargs.pop("roles")
+        #     o_roles = []
+        #     if isinstance(roles, str):
+        #         roles = roles.split(",")
+            
+        #     for role in roles:
+        #         if isinstance(role, str):
+        #             o_role = Role.objects(name=role).first()
+        #             if o_role:
+        #                 o_roles.append(o_role)
+        #         elif isinstance(role, Role):
+        #             o_roles.append(role)
+        #     kwargs["roles"] = o_roles
         if kwargs.pop("admin", False):
-            o_admin = Role.objects(name__iexact="admin").first()
-            kwargs["roles"] = kwargs.get("roles",[]).append(o_admin)
-        super(User, self).__init__(*args, **kwargs)
+            # o_admin = Role.objects(name__iexact="admin").first()
+            # kwargs["roles"] = kwargs.get("roles",[]).append(o_admin)
+            kwargs["roles"] = kwargs.get("roles", []) + ["admin"]
+        super().__init__(*args, **kwargs)
+
+    def to_barn_dict(self):
+        return dict(
+            name=self.name,
+            username=self.username,
+            public_id=self.public_id,
+            type="user",
+            active=self.active,
+            roles=self.roles
+        )
+
+    def reset_password(self, password):
+        self.password_hash = generate_password_hash(password, method='sha256')
 
     def __repr__(self):
         return '<User %r>' % (self.name)
+    
+    def get_id(self):
+        return self.public_id
 
     def has_role(self, role):
         return role in self.roles
+
+    def get_roles(self):
+        return [RoleNeed(**{'value':role}) for role in self.roles]
 
     def isadmin(self):
         if self.roles is not None and "admin" in self.roles:
@@ -76,6 +104,9 @@ class User(Document):
             if not self.has_role(role):
                 missing_roles.append(role)
         return missing_roles
+
+    def __hash__(self):
+        return hash((self.name, self.username, self.public_id, self.password_hash, self.active, frozenset(self.roles)))
 
 
 class Node(Document):
@@ -134,9 +165,9 @@ class Host(Node):
 
 class Group(Node):
     # hosts = ListField(default=[])
-    hosts = ListField(ReferenceField('Host'))
+    hosts = ListField(ReferenceField('Host'), default=[])
     # parent_groups=ListField(ReferenceField('Group'))
-    child_groups = ListField(ReferenceField('Group'))
+    child_groups = ListField(ReferenceField('Group'), default=[])
 
     def get_hosts(self):
         result = self.hosts
@@ -202,6 +233,9 @@ class Group(Node):
             hosts = [hosts]
         for host in hosts:
             self._add_host(host)
+
+    def __str__(self):
+        return str(self.name)
 
     @classmethod
     def from_json(cls, json_data, created=False, append=False):
