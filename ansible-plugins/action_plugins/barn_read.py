@@ -43,7 +43,7 @@ class ActionModule(ActionBase):
         if barn_url is None:
             result['changed'] = False
             result['failed'] = True
-            result['msg'] = "barn_host is required"
+            result['msg'] = "barn_url is required"
             return result
 
         query_args = dict(
