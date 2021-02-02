@@ -1,4 +1,6 @@
-from flask import request, jsonify, Blueprint, redirect, url_for, Response, abort
+import jwt
+import datetime
+from flask import request, jsonify, Blueprint, redirect, url_for, Response, abort, current_app
 from flask_login import logout_user, login_required, current_user
 from app.auth import admin_permission
 import logging
@@ -27,6 +29,12 @@ def login():
 def logout():
     logout_user()
     return jsonify(dict(msg="logout")), 401
+ 
 
-
-
+@login_pages.route('/token', methods=['GET', 'POST'])
+@login_required
+def login_user():
+    user = current_user
+    token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
+        ) + datetime.timedelta(minutes=30)}, current_app.config['TOKEN_ENCRYPTION_KEY'])
+    return jsonify({'token': token.decode('UTF-8')})
