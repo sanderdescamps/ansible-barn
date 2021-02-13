@@ -16,6 +16,7 @@ get:
         schema:
           type: boolean
         required: false
+        default: false
         description: Name is regular expression
       - in: query
         name: parent_vars
