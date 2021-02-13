@@ -26,6 +26,8 @@ class ActionModule(ActionBase):
         barn_user = module_args.get("barn_user", None)
         barn_password = module_args.get("barn_password", None)
         token = module_args.get("barn_token", None)
+        host = module_args.get("host",None)
+        regex = ensure_type(module_args.get("regex", False), 'bool') 
         load_to_facts = module_args.get("load_to_facts", False)
         include = ensure_type(module_args.get("include", []), 'list')
         exclude = ensure_type(module_args.get("exclude", []), 'list')
@@ -62,27 +64,37 @@ class ActionModule(ActionBase):
 
         try:
             data = {
-                "name": task_vars.get("inventory_hostname"),
-                'type': "host"
+                "name": host or task_vars.get("inventory_hostname"),
+                "regex": regex
             }
             query_args["data"] = json.dumps(data).encode('utf-8')
             self._display.vvv(
                 "POST {}/api/v1/inventory/hosts".format(barn_url))
             r = Request().open("POST", "{}/api/v1/inventory/hosts".format(barn_url), **query_args)
-            barn_resp = json.loads(r.read())
-            self._display.vvv("Response form Barn: %s" % (barn_resp))
-            barn_vars = barn_resp.get(
-                "result", {})[0].get("vars", {})
+            resp = json.loads(r.read())
+            self._display.vvv("Response form Barn: %s" % (resp))
 
-            if len(include) > 0:
-                barn_vars = {i: barn_vars[i] for i in include}
-            if len(exclude) > 0:
-                barn_vars = {i: barn_vars[i]
-                             for i in barn_vars if i not in exclude}
+            barn_results = resp.get("result", [])
+            result['changed'] = resp.get("changed", False)
+            result['failed'] = resp.get("failed", False)
+            result['raw_output'] = barn_results
 
-            result["vars"] = barn_vars
-            if load_to_facts:
-                result['ansible_facts'] = barn_vars
+            
+            if len(barn_results) == 1:
+                barn_vars = resp.get(
+                    "result", {})[0].get("vars", {})
+
+                if len(include) > 0:
+                    barn_vars = {i: barn_vars[i] for i in include}
+                if len(exclude) > 0:
+                    barn_vars = {i: barn_vars[i]
+                                for i in barn_vars if i not in exclude}
+
+                result["vars"] = barn_vars
+                if load_to_facts:
+                    result['ansible_facts'] = barn_vars
+            elif load_to_facts:
+                self._display.warning("Could not load vars into ansible_facts because host pattern matches multiple hosts.")
         except urllib_error.HTTPError as e:
             result["status"] = int(getattr(e, 'code', -1))
             try:

@@ -67,6 +67,16 @@ options:
       - Authentication token instead of username and password
     type: str
     version_added: '2.9.9'
+  host:
+    description:
+      - Hostname of the node. Use '*' as wildcard or check C(regex) for more options. 
+    type: str
+    version_added: '2.9.9'
+  regex:
+    description:
+      - Enable regex support for C(host) parameter. 
+    type: str
+    version_added: '2.9.9'
   load_to_facts:
     description:
       - If true the variables will be added in the hostvars of the host.
