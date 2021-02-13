@@ -2,26 +2,18 @@ openapi: 3.0.0
 info:
   title: Barn
   description: Dynamic inventory for Ansible
-  version: 1.0.0
+  version: 1.1.0
 servers:
   - url: /
 paths:
   /login:
-    post:
+    get:
       summary: Login into Barn
       security:
         - basicAuth: []
       responses:
         "200":
           description: Successfull login
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  token:
-                    type: string
-                    description: Authentication token
   /api/v1/admin/register:
     get:
       summary: Register new user
@@ -112,6 +104,8 @@ paths:
     $ref: "./users.yml#/users"
   /api/v1/admin/users/{action}:
     $ref: "./users.yml#/users_put"
+  /api/v1/users/token:
+    $ref: "./users.yml#/token"
 components:
   securitySchemes:
     basicAuth:
