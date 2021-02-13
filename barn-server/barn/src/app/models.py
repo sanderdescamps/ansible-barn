@@ -1,3 +1,4 @@
+import logging
 import uuid
 from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
@@ -131,11 +132,26 @@ class Node(Document):
         else:
             raise ValueError
 
+    def get_vars(self, parent_vars=False):
+        if parent_vars:
+            vars_copy = self.vars.copy()
+            vars_copy.update(self.get_parent_vars())
+            return vars_copy
+        else:
+            return self.vars
+
+    @abstractmethod
+    def get_parent_vars(self):
+        return {}
+
     def set_vars(self, vars_data):
         self.vars = vars_data
 
     def update_vars(self, vars_data):
         self.vars.update(vars_data)
+
+    def __str__(self):
+        return self.name
 
 
 
@@ -143,12 +159,23 @@ class Host(Node):
     def get_hosts(self):
         return [self]
 
-    def to_barn_dict(self):
+    def to_barn_dict(self, parent_vars=False):
         return dict(
             name=self.name,
             type="host",
-            vars=self.vars
+            vars=self.get_vars(parent_vars=parent_vars)
         )
+
+    def get_parent_vars(self):
+        parent_vars = {}
+        o_parent_groups = Group.objects(hosts__in=[self])
+        if not o_parent_groups:
+            return {}
+        for o_parent_group in o_parent_groups:
+            parent_vars.update(o_parent_group.get_vars())
+        return parent_vars
+        
+
     @classmethod
     def from_json(cls, json_data, created=False, append=False):
         if json_data.get("name"):
@@ -175,14 +202,23 @@ class Group(Node):
             result.extend(child_group.get_hosts())
         return result
 
-    def to_barn_dict(self):
+    def to_barn_dict(self, parent_vars=False):
         return dict(
             name=self.name,
             type="group",
-            vars=self.vars,
+            vars=self.get_vars(parent_vars=parent_vars),
             hosts=[host.name for host in self.hosts],
             child_groups=[group.name for group in self.child_groups]
         )
+
+    def get_parent_vars(self):
+        parent_vars = {}
+        o_parent_groups = Group.objects(child_groups__in=[self])
+        if not o_parent_groups:
+            return {}
+        for o_parent_group in o_parent_groups:
+            parent_vars.update(o_parent_group.get_vars())
+        return parent_vars
 
     def set_child_groups(self,child_groups):
         for child_group in child_groups:
