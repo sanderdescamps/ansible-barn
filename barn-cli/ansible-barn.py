@@ -463,7 +463,6 @@ def get_node(barn_context=None, node=None, **kwargs):
 @add.command(name="host")
 @click.option('--variables', '--var', '-a', help="Set variable", multiple=True)
 @click.option('--group', '-g', help="Group where host belongs to", multiple=True)
-@click.option('--group', '-g', help="Group where host belongs to", multiple=True)
 @click.option('--format', help="Output format", type=click.Choice(['text', 'json', 'yaml']), default="text", show_default="text")
 @click.option('--json', '-j', help="Same as format=json", is_flag=True, default=False)
 @click.option('--yaml', help="Same as format=yaml", is_flag=True, default=False)
@@ -482,17 +481,6 @@ def add_host(barn_context=None, name=None, **kwargs):
         data["vars"][key.strip()] = value.strip().strip('"').strip("'")
 
     barnresult = barn.request("PUT", "/api/v1/inventory/hosts/add", data=data)
-    # if kwargs.get("format") == "json" or kwargs.get("json"):
-    #     click.echo(json.dumps(results, indent=2))
-    # elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
-    #     click.echo(yaml.dump(results, indent=2))
-    # else:
-    #     if results.get("failed"):
-    #         for msg in results.get("msg"):
-    #             click.echo("Failed: %s" % (msg))
-    #     else:
-    #         for result in results.get("result", []):
-    #             click.echo(result.get("name"))
     if kwargs.get("format") == "json" or kwargs.get("json"):
         click.echo(barnresult.to_json())
     elif kwargs.get("format") == "yaml" or kwargs.get("yaml"):
@@ -663,6 +651,7 @@ def get_user(barn_context=None, username=None, **kwargs):
         click.echo(barnresult.to_yaml())
     else:
         click.echo(barnresult.to_text())
+
 
 
 if __name__ == '__main__':
