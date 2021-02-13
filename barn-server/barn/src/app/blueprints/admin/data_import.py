@@ -2,7 +2,7 @@ from http import HTTPStatus
 import json
 import yaml
 import re
-import logging
+import logging, traceback
 from flask import request, Blueprint, render_template, jsonify, redirect
 from flask_login import login_required
 from app.models import Host, Group, Node
@@ -38,6 +38,7 @@ def put_file_import():
             try:
                 data = file.read().decode('utf-8')
                 to_add = _convert_ini(data)
+                resp.add_message("Successfully loaded %s"%(file.filename))
             except Exception:
                 return resp.failed(msg="failed to read ini file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
         else:
@@ -68,10 +69,10 @@ def put_file_import():
 
         # first make sure all nodes exist
         for host in hosts_to_add:
-            if host.get("name") and not Host.objects(name=host.get("name")):
+            if host.get("name") and not Host.objects(name=host.get("name")).first():
                 Host(name=host.get("name")).save()
         for group in groups_to_add:
-            if group.get("name") and not Group.objects(name=group.get("name")):
+            if group.get("name") and not Group.objects(name=group.get("name")).first():
                 Group(name=group.get("name")).save()
 
         for host in hosts_to_add:
@@ -80,7 +81,8 @@ def put_file_import():
                 o_host.save()
                 resp.add_result(o_host)
                 resp.changed()
-            except Exception as _:
+            except Exception:
+                logging.error(traceback.format_exc())
                 resp.add_message("Failed to import host %s"%(host.get("name","unknown")))
         for group in groups_to_add:
             try:
@@ -88,7 +90,8 @@ def put_file_import():
                 o_group.save()
                 resp.add_result(o_group)
                 resp.changed()
-            except Exception as _:
+            except Exception:
+                logging.error(traceback.format_exc())
                 resp.add_message("Failed to import group %s"%(group.get("name","unknown")))
     else:
         resp.failed(msg="No valid hosts or groups in import")
@@ -103,10 +106,8 @@ def _convert_ini(data):
 
         output_groups = {}
         output_hosts = {}
-        pending_declarations = {}
         groupname = 'ungrouped'
         state = 'hosts'
-        lineno = 0
         
         section_dict = {}
 
@@ -144,7 +145,8 @@ def _convert_ini(data):
                 output_hosts[name] = dict(name=name, vars={})
                 group_hosts.append(name)
 
-            output_groups[groupname] = dict(name=groupname, hosts=group_hosts)
+            if groupname != "ungrouped":
+                output_groups[groupname] = dict(name=groupname, hosts=group_hosts)
     
         for section_title, lines in children_sections.items():
             groupname = section_title.split(":")[0]
