@@ -134,3 +134,25 @@ users_put:
         $ref: './swagger.yml#/components/responses/DefaultResponse'
       '401':
         $ref: './swagger.yml#/components/responses/UnauthorizedError'
+token:
+  get:
+    summary: "Receive an Authentication token (Alias: /token)"
+    description: | 
+      Return a JWT token for authentication to Barn. By default the token is valid for 30min. <br>
+      Use the 'x-access-tokens' header to use the jwt authentication. 
+    security:
+      - basicAuth: []
+    responses:
+      "200":
+        description: Token response
+        content: 
+          application/json:
+                schema:
+                  type: object
+                  properties:
+                    token:
+                      type: string
+                      default: ""
+                      description: Authentication token. Valid for 30min
+      '401':
+        $ref: './swagger.yml#/components/responses/UnauthorizedError'
