@@ -1,12 +1,16 @@
+import jwt
+import datetime
+import logging
 import uuid
-from flask import request, Blueprint, abort
-from flask_login import login_required
+from flask import request, Blueprint, abort, current_app, jsonify
+from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from mongoengine.errors import NotUniqueError, DoesNotExist
 from app.models import User
 from app.utils.formater import ResponseFormater
 from app.utils import list_parser, merge_args_data, generate_password, boolean_parser
 from app.auth import admin_permission
+
 
 
 user_pages = Blueprint('user', __name__)
@@ -173,3 +177,11 @@ def delete_user():
         resp.failed(msg="User(s) not found", status=404)
     return resp.get_response()
 
+@user_pages.route('/token', methods=['GET', 'POST'])
+@user_pages.route('/api/v1/users/token', methods=['GET', 'POST'])
+@login_required
+def login_user():
+    user = current_user
+    token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
+        ) + datetime.timedelta(minutes=30)}, current_app.config['TOKEN_ENCRYPTION_KEY'])
+    return jsonify({'token': token.decode('UTF-8')})
