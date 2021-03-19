@@ -74,6 +74,9 @@ users:
     description: See /api/v1/admin/users/present for more details
     tags:
       - user managment
+    responses:
+      "200":
+        $ref: './swagger.yml#/components/responses/DefaultResponse'
 users_put:
   put:
     summary: Add/Update user
