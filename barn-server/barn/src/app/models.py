@@ -1,10 +1,12 @@
 import logging
+from os import sched_rr_get_interval
 import uuid
 from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
 from flask_login.mixins import UserMixin
 from flask_principal import RoleNeed
+from app.utils import remove_empty_fields
 
 
 # class Role(Document):
@@ -114,13 +116,19 @@ class Node(Document):
     name = StringField(required=True, unique=True)
     vars = DictField(default={})
     meta = {'allow_inheritance': True}
+    crates = ListField(ReferenceField('Crate'),default=[])
+
 
     @abstractmethod
-    def get_hosts(self):
-        return
+    def get_hosts(self, recursive=False):
+        return [self]
 
     @abstractmethod
     def to_barn_dict(self):
+        pass
+
+    @abstractmethod
+    def format(self, empty_keys=True, parent_vars=False):
         pass
 
     @classmethod
@@ -153,10 +161,23 @@ class Node(Document):
     def __str__(self):
         return self.name
 
+    def subscribe_crate(self, crate):
+        if crate not in self.crates:
+            self.crates.append(crate)
+            return True
+        return False
 
+    def unsubscribe_crate(self, crate):
+        if crate in self.crates:
+            self.crates.remove(crate)
+            return True
+        return False
+
+    def get_crates(self):
+        return list(self.crates)
 
 class Host(Node):
-    def get_hosts(self):
+    def get_hosts(self, recursive=False):
         return [self]
 
     def to_barn_dict(self, parent_vars=False):
@@ -165,6 +186,26 @@ class Host(Node):
             type="host",
             vars=self.get_vars(parent_vars=parent_vars)
         )
+
+    def format(self, empty_values=True, parent_vars=False, **kwargs):
+        """Return a directory of the host object. 
+        Args:
+            empty_values (bool): If False all null and empty values (or keys) will be removed frm the output. 
+            parent_vars (bool): Add parent variables
+
+        Returns:
+            [dict]: dictionary output of the host object
+        """
+        output = dict(
+            name=self.name,
+            type="host",
+            vars=self.get_vars(parent_vars=parent_vars)
+        )
+        if not empty_values:
+            output["vars"] = remove_empty_fields(output["vars"])
+        return output
+
+
 
     def get_parent_vars(self):
         parent_vars = {}
@@ -196,10 +237,19 @@ class Group(Node):
     # parent_groups=ListField(ReferenceField('Group'))
     child_groups = ListField(ReferenceField('Group'), default=[])
 
-    def get_hosts(self):
+    def get_hosts(self, recursive=False):
+        """Return all hosts inside the group
+
+        Args:
+            recursive (bool, optional): Add all hosts of child-groups. Defaults to False.
+
+        Returns:
+            list: List of host objects
+        """
         result = self.hosts
-        for child_group in self.child_groups:
-            result.extend(child_group.get_hosts())
+        if recursive:
+            for child_group in self.child_groups:
+                result.extend(child_group.get_hosts(recursive=recursive))
         return result
 
     def to_barn_dict(self, parent_vars=False):
@@ -210,6 +260,25 @@ class Group(Node):
             hosts=[host.name for host in self.hosts],
             child_groups=[group.name for group in self.child_groups]
         )
+    
+    def format(self, empty_values=True, parent_vars=False, **kwargs):
+        """Return a directory of the host object. 
+        Args:
+            empty_values (bool): If False all null and empty values (or keys) will be removed frm the output. 
+            parent_vars (bool): Add parent variables
+
+        Returns:
+            [dict]: dictionary output of the host object
+        """
+        output = dict(
+            name=self.name,
+            type="host",
+            vars=self.get_vars(parent_vars=parent_vars)
+        )
+        if not empty_values:
+            output["vars"] = remove_empty_fields(output["vars"])
+        return output
+
 
     def get_parent_vars(self):
         parent_vars = {}
@@ -290,3 +359,26 @@ class Group(Node):
             return o_group
         else:
             raise ValueError
+
+
+
+class Crate(Document):
+
+    id=StringField()
+    type=StringField(required=True)
+    vars = DictField(default={})
+
+    def get_subscribers(self, recursive=False):
+        o_subscribers = list(Node.objects(crates__in=[self]))
+        if not recursive:
+            return o_subscribers
+        
+        o_subsc_hosts = set()
+        for n in o_subscribers:
+            o_subsc_hosts.update(n.get_hosts(recursive=recursive))
+        return list(o_subsc_hosts)
+
+    def __str__(self):
+        return "%s_%s"%("Crate", str(self.id))
+
+        
