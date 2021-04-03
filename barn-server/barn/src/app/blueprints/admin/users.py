@@ -103,7 +103,7 @@ def _add_user(**kwargs):
 
     if "password" not in user_kwargs and "password_hash" not in user_kwargs:
         user_kwargs["password"] = generate_password()
-        resp.add_message("Generate random password for {}".format(user_kwargs.get("username","unknown user")))
+        resp.log("Generate random password for {}".format(user_kwargs.get("username","unknown user")))
 
     if user_kwargs.get("roles") is not None:
         user_kwargs["roles"] = list_parser(user_kwargs.get("roles"))
@@ -111,7 +111,7 @@ def _add_user(**kwargs):
     try:
         o_user = User(**user_kwargs)
         o_user.save()
-        resp.add_message("User created")
+        resp.log("User created")
         resp.changed()
     except NotUniqueError:
         raise NotUniqueError
@@ -142,7 +142,7 @@ def _modify_user(**user_kwargs):
         if password_hash.startswith("sha256$"):
             o_user.password_hash = password_hash
         else:
-            resp.add_message("invalid password hash")
+            resp.log("invalid password hash")
     elif "password" in user_kwargs:
         password = user_kwargs.pop("password").strip()
         if not check_password_hash(o_user.password_hash, password):
@@ -154,7 +154,7 @@ def _modify_user(**user_kwargs):
 
     if o_user_hash != hash(o_user):
         o_user.save()
-        resp.add_message("User modified")
+        resp.log("User modified")
         resp.changed()
 
     return resp
@@ -172,7 +172,7 @@ def delete_user():
     if o_users:
         o_users.delete()
         resp.changed()
-        resp.add_message("User(s) removed")
+        resp.log("User(s) removed")
     else:
         resp.failed(msg="User(s) not found", status=404)
     return resp.get_response()

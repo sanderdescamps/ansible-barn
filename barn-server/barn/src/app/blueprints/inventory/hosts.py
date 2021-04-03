@@ -67,13 +67,13 @@ def put_hosts(action=None, resp=None):
     if action == "set" and barn_vars != o_host.vars:
         o_host.vars = {}
         resp.changed()
-        resp.add_message("Reset host variables")
+        resp.log("Reset host variables")
 
     for k, v in barn_vars.items():
         if o_host.vars.get(k, None) != v:
             o_host.vars[k] = v
             resp.changed()
-            resp.add_message("Change variable: {}".format(k))
+            resp.log("Change variable: {}".format(k))
 
     # Delete variables
     if action != "add":
@@ -98,7 +98,7 @@ def put_hosts(action=None, resp=None):
             if not o_group and args.get('create_groups', True):
                 o_group = Group(name=group)
                 resp.changed()
-                resp.add_message("Create {} group".format(group))
+                resp.log("Create {} group".format(group))
             if o_group:
                 o_groups_add_list.append(o_group)
 
@@ -131,13 +131,13 @@ def put_hosts(action=None, resp=None):
     for g in list(set(o_groups_remove_list)):
         if o_host in g.hosts:
             g.hosts.remove(o_host)
-            resp.add_message("Remove {} from {} group".format(name, g.name))
+            resp.log("Remove {} from {} group".format(name, g.name))
             g.save()
             resp.changed()
     for g in list(set(o_groups_add_list)):
         if o_host not in g.hosts:
             g.hosts.append(o_host)
-            resp.add_message("Add {} into {} group".format(name, g.name))
+            resp.log("Add {} into {} group".format(name, g.name))
             g.save()
             resp.changed()
 

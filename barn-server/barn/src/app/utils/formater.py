@@ -3,7 +3,6 @@ from mongoengine.queryset import QuerySet
 from flask import jsonify, make_response
 from app.models import Node, Host, Group, User
 
-
 class ResponseFormater():
     def __init__(self):
         self._failed = False
@@ -56,7 +55,7 @@ class ResponseFormater():
         self._failed = failed
         self._status = status
         if msg:
-            self.set_main_message(msg)
+            self.log(msg)
         if changed is not None:
             self._changed = changed
         return self
@@ -76,7 +75,7 @@ class ResponseFormater():
         self._failed = failed
         self._status = status
         if msg:
-            self.set_main_message(msg)
+            self.log(msg)
         if changed is not None:
             self._changed = changed
         return self
@@ -94,33 +93,46 @@ class ResponseFormater():
             'WWW.Authentication': 'Basic realm="login required"'
         }).failed(msg=msg, failed=True, status=401)
 
-    def set_main_message(self, message):
-        """Set the main message of the response. Message will also be added to the msg_list. 
+    def log(self,message, main=False):
+        """Add log message to the response 
 
         Args:
             message (str): Message
+            main (bool): when True the message will be labeled as the main message. 
 
-        Returns:
-            ResponseFormatter: return self
         """
         self._msg_list.append(message)
-        self._msg = message
-        return self
+        if main:
+            self._msg = message
 
-    def add_message(self, message):
-        """Add a message to the logs of the response
 
-        Args:
-            message (str): message
+    # def set_main_message(self, message):
+    #     """Set the main message of the response. Message will also be added to the msg_list. 
 
-        Returns:
-            ResponseFormatter: return self
-        """
-        self._msg_list.append(message)
-        self._msg = message
-        return self
+    #     Args:
+    #         message (str): Message
 
-    def add_result(self, result):
+    #     Returns:
+    #         ResponseFormatter: return self
+    #     """
+    #     self._msg_list.append(message)
+    #     self._msg = message
+    #     return self
+
+    # def log(self, message):
+    #     """Add a message to the logs of the response
+
+    #     Args:
+    #         message (str): message
+
+    #     Returns:
+    #         ResponseFormatter: return self
+    #     """
+    #     self._msg_list.append(message)
+    #     self._msg = message
+    #     return self
+
+    def add_result(self, result, **kwargs):
         if isinstance(result, (dict, Host, Group, Node, User)):
             result = [result]
         if isinstance(result, QuerySet):

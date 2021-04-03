@@ -25,20 +25,20 @@ def put_file_import():
         if fileextention.lower() in ("yaml", "yml"):
             try:
                 to_add = yaml.load(file, Loader=yaml.FullLoader)
-                resp.add_message("Successfully loaded %s"%(file.filename))
+                resp.log("Successfully loaded %s"%(file.filename))
             except yaml.YAMLError as _:
                 return resp.failed(msg="failed to read yaml file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
         elif fileextention.lower() == "json":
             try:
                 to_add = json.load(file)
-                resp.add_message("Successfully loaded %s"%(file.filename))
+                resp.log("Successfully loaded %s"%(file.filename))
             except json.JSONDecodeError as _:
                 return resp.failed(msg="failed to read json file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
         elif fileextention.lower() == "ini":
             try:
                 data = file.read().decode('utf-8')
                 to_add = _convert_ini(data)
-                resp.add_message("Successfully loaded %s"%(file.filename))
+                resp.log("Successfully loaded %s"%(file.filename))
             except Exception:
                 return resp.failed(msg="failed to read ini file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
         else:
@@ -61,7 +61,7 @@ def put_file_import():
             o_nodes_to_delete = Node.objects()
             if o_nodes_to_delete.count() > 0:
                 o_nodes_to_delete.delete()
-                resp.add_message("Remove old hosts and groups")
+                resp.log("Remove old hosts and groups")
                 logging.info("Remove all existing nodes during import")
                 resp.changed()
             else:
@@ -83,7 +83,7 @@ def put_file_import():
                 resp.changed()
             except Exception:
                 logging.error(traceback.format_exc())
-                resp.add_message("Failed to import host %s"%(host.get("name","unknown")))
+                resp.log("Failed to import host %s"%(host.get("name","unknown")))
         for group in groups_to_add:
             try:
                 o_group = Group.from_json(group,append=True)
@@ -92,11 +92,11 @@ def put_file_import():
                 resp.changed()
             except Exception:
                 logging.error(traceback.format_exc())
-                resp.add_message("Failed to import group %s"%(group.get("name","unknown")))
+                resp.log("Failed to import group %s"%(group.get("name","unknown")))
     else:
         resp.failed(msg="No valid hosts or groups in import")
 
-    resp.add_message("Import completed")
+    resp.log("Import completed")
     return resp.get_response()
 
 _COMMENT_MARKERS = frozenset((u';', u'#'))
