@@ -184,4 +184,4 @@ def login_user():
     user = current_user
     token = jwt.encode({'public_id': user.public_id, 'exp': datetime.datetime.utcnow(
         ) + datetime.timedelta(minutes=30)}, current_app.config['TOKEN_ENCRYPTION_KEY'])
-    return jsonify({'token': token.decode('UTF-8')})
+    return jsonify({'token': token})

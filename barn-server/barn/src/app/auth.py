@@ -66,7 +66,7 @@ def load_user_from_request(l_request):
     token = l_request.headers.get('x-access-tokens', None)
     if token is not None and token != "":
         try:
-            data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"]))
+            data = dict(jwt.decode(token, current_app.config["TOKEN_ENCRYPTION_KEY"], algorithms=["HS256"]))
             check_user = User.objects(public_id=data.get("public_id")).first()
             if check_user:
                 identity_changed.send(current_app._get_current_object(), identity=Identity(check_user.public_id))
