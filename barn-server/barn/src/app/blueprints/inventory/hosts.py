@@ -12,12 +12,23 @@ from app.utils.schemas import BaseResponse, HostQueryArgsSchema, NodeResponse, H
 
 host_pages = Blueprint('host', __name__)
 
-@host_pages.route('/api/v1/inventory/hosts', methods=['GET','POST'])
+@host_pages.route('/api/v1/inventory/hosts', methods=['GET'])
+@host_pages.arguments(HostQueryArgsSchema, location='query', as_kwargs=True )
+@host_pages.response(200, NodeResponse)
+@login_required
+def get_hosts(resp=None, **kwargs):
+    """List of hosts"""
+    return _get_hosts(resp=resp, **kwargs)
+
+@host_pages.route('/api/v1/inventory/hosts', methods=['POST'])
 @host_pages.arguments(HostQueryArgsSchema, location='query', as_kwargs=True )
 @host_pages.arguments(HostQueryArgsSchema, location='json', as_kwargs=True )
 @host_pages.response(200, NodeResponse)
 @login_required
-def get_hosts(resp=None, **kwargs):
+def post_hosts(resp=None, **kwargs):
+    return _get_hosts(resp=resp, **kwargs)
+
+def _get_hosts(resp=None, **kwargs):
     """List of hosts"""
     resp = resp or ResponseFormater()
 
@@ -35,8 +46,6 @@ def get_hosts(resp=None, **kwargs):
         resp.succeed(msg='No hosts found for {}'.format(log_name))
     resp.add_result(o_hosts)
     return resp.get_response()
-
-
 
 @host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])
 @host_pages.route('/api/v1/inventory/hosts/<action>', methods=['PUT'])
