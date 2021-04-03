@@ -1,6 +1,7 @@
 import json
 import yaml
-from flask import request, Blueprint, make_response
+from flask import request, make_response
+from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Host, Group
 from app.utils import merge_args_data, remove_empty_fields

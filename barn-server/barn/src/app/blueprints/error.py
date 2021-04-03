@@ -1,9 +1,9 @@
 import logging
+import json
 import traceback
 from flask import jsonify, make_response
 from flask_login import current_user
 from flask_principal import Permission
-
 
 
 #400
@@ -48,6 +48,28 @@ def handle_not_found(e):
         status=404,
     )
     return jsonify(data), 404
+
+#422
+def handle_unprocessable_entity(e):
+    
+    msg = "Unprocessable Entity"
+    msg_list = [msg]
+    if hasattr(e, 'description'):
+        msg_list.append(e.description) 
+
+    exp_data = e.data if hasattr(e, 'data') else {}
+    if 'schema' in exp_data:
+        msg_list.append("Request does not match {} schema".format(str(exp_data.get('schema'))))
+
+    data = dict(
+        failed=True,
+        changed=False,
+        msg=msg,
+        mg_list=msg_list,
+        status=int(e.code) if hasattr(e, 'code') else 422,
+        error=exp_data.get('messages',{})
+    )
+    return jsonify(data), 422
 
 #500
 def handle_internal_server_error(e):

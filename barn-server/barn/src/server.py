@@ -2,10 +2,10 @@ from logging.config import dictConfig
 import os
 import sys
 import logging
-from app.BarnServer import BarnServer
-from app.auth import login_manager, principals
 from flask_mongoengine import MongoEngine
 from waitress import serve
+from app.BarnServer import BarnServer
+from app.auth import login_manager, principals
 
 
 dictConfig({
@@ -62,6 +62,7 @@ db.init_app(app)
 login_manager.init_app(app)
 principals.init_app(app)
 app.create_admin_user()
+
 
 if __name__ == "__main__":
     serve(app, host='0.0.0.0', port=5000, threads=4)

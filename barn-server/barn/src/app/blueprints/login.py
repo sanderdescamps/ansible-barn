@@ -1,4 +1,5 @@
-from flask import request, jsonify, Blueprint, redirect, url_for, Response, abort, current_app
+from flask import request, jsonify, redirect, url_for, Response, abort, current_app
+from flask_smorest import Blueprint
 from flask_login import logout_user, login_required, current_user
 
 

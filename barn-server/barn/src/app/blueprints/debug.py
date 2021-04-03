@@ -1,12 +1,17 @@
 import logging
-import random
-from flask import Blueprint, jsonify, current_app
+from flask import jsonify, current_app
 from flask_login import login_required
+from webargs import fields
 from app.models import Group, Host, User
 from app.auth import admin_permission
 from app.utils.formater import ResponseFormater
+from app.utils.schemas import BaseResponse
+from flask_smorest import Blueprint
+
+
 
 debug_pages = Blueprint('debug', __name__)
+
 
 
 @debug_pages.route('/init', methods=['PUT', 'GET'])
@@ -47,6 +52,7 @@ def init():
 
 
 @debug_pages.route('/flush', methods=['DELETE'])
+@debug_pages.response(200, BaseResponse)
 @login_required
 def flush():
     Host.objects().delete()
@@ -64,3 +70,13 @@ def test():
     logging.getLogger().debug("debug message")
     return ResponseFormater().succeed(msg="it works").get_response()
     # return jsonify(dict(msg="it works"))
+
+
+@debug_pages.route('/schemas', methods=['GET', 'POST'])
+def schemas(**kwargs):
+    schema =  BaseResponse()
+    return schema.dump(dict(failed=False))
+    # return ResponseFormater().succeed(msg="it works").get_response()
+    # return jsonify(dict(msg="it works"))
+
+

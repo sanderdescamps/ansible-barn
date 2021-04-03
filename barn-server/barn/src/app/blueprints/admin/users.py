@@ -2,7 +2,8 @@ import jwt
 import datetime
 import logging
 import uuid
-from flask import request, Blueprint, abort, current_app, jsonify
+from flask import request, abort, current_app, jsonify
+from flask_smorest import Blueprint
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from mongoengine.errors import NotUniqueError, DoesNotExist

@@ -3,8 +3,11 @@ Werkzeug
 flask_mongoengine
 mongoengine
 PyJWT
-flask-swagger
-flask-swagger-ui
+# flask-swagger
+# flask-swagger-ui
 waitress
 flask-login
 Flask-Principal
+marshmallow
+flask-smorest
+PyYAML

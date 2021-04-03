@@ -1,7 +1,8 @@
 import logging
 import re
 from http import HTTPStatus
-from flask import Blueprint, request, abort
+from flask_smorest import Blueprint
+from flask import request, abort
 from mongoengine.errors import NotUniqueError
 from flask_login import login_required
 from app.utils import list_parser, merge_args_data, boolean_parser

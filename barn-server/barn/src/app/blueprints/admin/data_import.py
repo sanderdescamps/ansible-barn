@@ -3,7 +3,8 @@ import json
 import yaml
 import re
 import logging, traceback
-from flask import request, Blueprint, render_template, jsonify, redirect
+from flask import request, render_template, jsonify, redirect
+from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Host, Group, Node
 from app.utils.formater import ResponseFormater

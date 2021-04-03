@@ -1,4 +1,5 @@
-from flask import jsonify, Blueprint
+from flask import jsonify
+from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Host, Group
 

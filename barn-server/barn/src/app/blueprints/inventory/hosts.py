@@ -1,45 +1,53 @@
 import re
 import logging
-from flask import request, Blueprint
+from flask import request
+from flask_smorest import Blueprint
 from flask_login import login_required
 from mongoengine.errors import NotUniqueError
 from http import HTTPStatus
 from app.models import Host, Group
-from app.utils import merge_args_data, list_parser, boolean_parser
+from app.utils import list_parser, boolean_parser
 from app.utils.formater import ResponseFormater
+from app.utils.schemas import BaseResponse, HostQueryArgsSchema, NodeResponse, HostPutQueryArgsSchema
 
 host_pages = Blueprint('host', __name__)
 
-
 @host_pages.route('/api/v1/inventory/hosts', methods=['GET','POST'])
+@host_pages.arguments(HostQueryArgsSchema, location='query', as_kwargs=True )
+@host_pages.arguments(HostQueryArgsSchema, location='json', as_kwargs=True )
+@host_pages.response(200, NodeResponse)
 @login_required
-def get_hosts(resp=None):
-    if resp is None:
-        resp = ResponseFormater()
-    args = request.args if request.method == 'GET' else request.get_json(
-        silent=True) or {}
+def get_hosts(resp=None, **kwargs):
+    """List of hosts"""
+    resp = resp or ResponseFormater()
+
     query_args = dict()
-    if "name" in args:     
-        if boolean_parser(args.get("regex",False)):
-            regex_name = re.compile("^{}$".format(args.get("name").strip(" ").lstrip("^").rstrip("$")))
+    if "name" in kwargs:     
+        if boolean_parser(kwargs.get("regex",False)):
+            regex_name = re.compile("^{}$".format(kwargs.get("name").strip(" ").lstrip("^").rstrip("$")))
             query_args["name"] = regex_name
         else:
-            regex_name = re.compile(r"^{}$".format(re.escape(args.get("name")).replace("\*",".*")))
+            regex_name = re.compile(r"^{}$".format(re.escape(kwargs.get("name")).replace("\*",".*")))
             query_args["name"] = regex_name
-    resp.add_result(Host.objects(**query_args))
+    o_hosts = Host.objects(**query_args)
+    if o_hosts.count() < 1:
+        log_name = "RegExp({})".format(kwargs.get('name')) if boolean_parser(kwargs.get("regex",False)) else kwargs.get('name')
+        resp.succeed(msg='No hosts found for {}'.format(log_name))
+    resp.add_result(o_hosts)
     return resp.get_response()
+
 
 
 @host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])
 @host_pages.route('/api/v1/inventory/hosts/<action>', methods=['PUT'])
+@host_pages.arguments(HostPutQueryArgsSchema, location='json', as_kwargs=True)
+@host_pages.response(200,BaseResponse)
 @login_required
-def put_hosts(action=None, resp=None):
-    if resp is None:
-        resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
-    
+def put_hosts(action="present", resp=None, **kwargs):
+    """Modify host"""
+    resp = resp or ResponseFormater()    
 
-    name = args.get("name", None)
+    name = kwargs.get("name", None)
     if name is None:
         resp.failed(msg='name not defined')
         return resp.get_response()
@@ -47,23 +55,23 @@ def put_hosts(action=None, resp=None):
     # Create Host
     o_host = Host.objects(name=name).first()
     if o_host is not None and action == "add":
-        resp.failed(msg='%s already exist' % (args.get("name")))
+        resp.failed(msg='%s already exist' % (kwargs.get("name")))
         return resp.get_response()
     elif o_host is None:
         if action == "update":
-            resp.failed(msg='Host not found: %s Does not exist' % (args.get("name")))
+            resp.failed(msg='Host not found: %s Does not exist' % (kwargs.get("name")))
             return resp.get_response()
         else:
             try:
                 o_host = Host(name=name)
                 resp.succeed(changed=True, msg="Create host {}".format(name), status=HTTPStatus.CREATED)
             except NotUniqueError:
-                resp.failed(msg='%s already exist' % (args.get("name")))
+                resp.failed(msg='%s already exist' % (kwargs.get("name")))
                 return resp.get_response()
 
     
     # Set variables
-    barn_vars = args.get("vars", {})
+    barn_vars = kwargs.get("vars", {})
     if action == "set" and barn_vars != o_host.vars:
         o_host.vars = {}
         resp.changed()
@@ -77,11 +85,11 @@ def put_hosts(action=None, resp=None):
 
     # Delete variables
     if action != "add":
-        vars_to_remove = args.get("vars_absent", [])
+        vars_to_remove = kwargs.get("vars_absent", [])
         for var_to_remove in vars_to_remove:
             if var_to_remove in o_host.vars:
                 del o_host.vars[var_to_remove]
-                resp.add_message("Remove variable: {}".format(var_to_remove))
+                resp.log("Remove variable: {}".format(var_to_remove))
                 resp.changed()
 
     # Save Host
@@ -91,27 +99,27 @@ def put_hosts(action=None, resp=None):
     # Add host to group
     o_groups_remove_list = []
     o_groups_add_list = []
-    if args.get("groups", False):
-        groups = list_parser(args.get("groups"))
+    if kwargs.get("groups", False):
+        groups = list_parser(kwargs.get("groups"))
         for group in groups:
             o_group = Group.objects(name=group).first()
-            if not o_group and args.get('create_groups', True):
+            if not o_group and kwargs.get('create_groups', True):
                 o_group = Group(name=group)
                 resp.changed()
                 resp.log("Create {} group".format(group))
             if o_group:
                 o_groups_add_list.append(o_group)
 
-    if args.get("groups_present", False):
-        groups = list_parser(args.get("groups_present"))
+    if kwargs.get("groups_present", False):
+        groups = list_parser(kwargs.get("groups_present"))
         for group in groups:
             o_group = Group.objects(name=group).first()
-            if not o_group and args.get('create_groups', True):
+            if not o_group and kwargs.get('create_groups', True):
                 o_group = Group(name=group)
             if o_group:
                 o_groups_add_list.append(o_group)
-    if args.get("groups_set", False) and not any(k in args for k in ("groups", "groups_present", "groups_absent")):
-        groups = list_parser(args.get("groups_set"))
+    if kwargs.get("groups_set", False) and not any(k in kwargs for k in ("groups", "groups_present", "groups_absent")):
+        groups = list_parser(kwargs.get("groups_set"))
 
         o_groups_remove = Group.objects(name__not__in=groups, hosts__in=[o_host])
         for g in o_groups_remove:
@@ -119,12 +127,12 @@ def put_hosts(action=None, resp=None):
         
         for group in groups:
             o_group = Group.objects(name=group).first()
-            if not o_group and args.get('create_groups', True):
+            if not o_group and kwargs.get('create_groups', True):
                 o_group = Group(name=group)
             if o_group:
                 o_groups_add_list.append(o_group)
-    if args.get("groups_absent", False):
-        groups = list_parser(args.get("groups_absent"))
+    if kwargs.get("groups_absent", False):
+        groups = list_parser(kwargs.get("groups_absent"))
         o_groups_remove = Group.objects(name__in=groups)
         for g in o_groups_remove:
             o_groups_remove_list.append(g)
@@ -146,20 +154,30 @@ def put_hosts(action=None, resp=None):
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['DELETE'])
 @login_required
-def delete_hosts():
+@host_pages.arguments(HostQueryArgsSchema, location='query', as_kwargs=True)
+@host_pages.arguments(HostQueryArgsSchema, location='json', as_kwargs=True)
+@host_pages.response(200, BaseResponse)
+def delete_hosts(**kwargs):
+    """Delete host or list of hosts"""
     resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()
-    if "name" in args:
-        query_args["name__in"] = list_parser(args.get("name"))
+    if "name" in kwargs:
+        names = list_parser(kwargs.get("name"))
+        if boolean_parser(kwargs.get("regex",False)):
+            regex_names = [re.compile("^{}$".format(n.strip(" ").lstrip("^").rstrip("$"))) for n in names]
+            query_args["name__in"] = regex_names
+        else:
+            regex_names = [re.compile(r"^{}$".format(re.escape(n).replace("\*",".*"))) for n in names]
+            query_args["name__in"] = regex_names
     else:
-        resp.failed(msg='name not defined')
+        resp.failed(msg='Name not defined')
         return resp.get_response()
 
     o_hosts = Host.objects(**query_args)
     
     if o_hosts.count() < 1:
-        resp.failed(msg='%s not found' % (args.get('name')))
+        log_name = "RegExp({})".format(kwargs.get('name')) if boolean_parser(kwargs.get("regex",False)) else kwargs.get('name')
+        resp.failed(msg='No hosts found for {}'.format(log_name))
     else:
         #Remove host from all groups where the host is used
         Group.objects(hosts__in=o_hosts).update(pull_all__hosts=o_hosts) 

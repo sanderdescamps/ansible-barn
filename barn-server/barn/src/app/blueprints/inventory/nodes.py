@@ -1,5 +1,6 @@
 import re
-from flask import request, Blueprint
+from flask import request
+from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Node
 from app.utils import merge_args_data, list_parser, boolean_parser
