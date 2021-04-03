@@ -53,7 +53,7 @@ class BarnServer(Flask):
         self.load_config_file(config_path)
         self.spec = Api(self, spec_kwargs=dict(response_plugin=ResponseReferencesPlugin(BarnError)))
 
-        self.spec.DEFAULT_ERROR_RESPONSE_NAME = None
+        # self.spec.DEFAULT_ERROR_RESPONSE_NAME = None
         self._register_blueprints()
         self._register_error_handlers()
 
@@ -162,7 +162,6 @@ class BarnServer(Flask):
         return result
 
     def _register_blueprints(self):
-        # self.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
         self.register_blueprint(host_pages)
         self.register_blueprint(user_pages)
         self.register_blueprint(group_pages)
