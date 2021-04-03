@@ -46,8 +46,6 @@ class BarnError(BaseResponse):
     errors = fields.Dict(metadata={"description": "'Details about the error'"})
     changed = fields.Bool(default=False, description='True if a change is made in the barn database.', example=False)
     failed = fields.Bool(default=False, description='True if operation failed', example=True)
-    msg = fields.Str(description='The main message', example="This is a sample error message")
-    msg_list = fields.List(fields.Str, description='List of log messages', example=["This is a sample error message"])
 
 class NodeResponse(BaseResponse):
     result = fields.List(fields.Nested(NodeSchema), description='Result with list of Nodes')
