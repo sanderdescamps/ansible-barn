@@ -5,43 +5,52 @@ from flask_smorest import Blueprint
 from flask import request, abort
 from mongoengine.errors import NotUniqueError
 from flask_login import login_required
-from app.utils import list_parser, merge_args_data, boolean_parser
 from app.models import Group, Host
 from app.utils.formater import ResponseFormater
+from app.utils.schemas import GroupPutQueryArgsSchema, GroupQueryArgsSchema, NodeResponse
 
 
 group_pages = Blueprint('group', __name__)
 
 
-@group_pages.route('/api/v1/inventory/groups', methods=['GET','POST'])
+@group_pages.route('/api/v1/inventory/groups', methods=['GET'])
+@group_pages.arguments(GroupQueryArgsSchema, location='query', as_kwargs=True )
+@group_pages.response(200, NodeResponse)
 @login_required
-def get_groups(resp=None):
-    if resp is None:
-        resp = ResponseFormater()
-    args = request.args if request.method == 'GET' else request.get_json(
-        silent=True) or {}
+def get_groups(resp=None, **kwargs):
+    return _get_groups(resp=resp, **kwargs)
 
+@group_pages.route('/api/v1/inventory/groups', methods=['POST'])
+@group_pages.arguments(GroupQueryArgsSchema, location='query', as_kwargs=True )
+@group_pages.arguments(GroupQueryArgsSchema, location='json', as_kwargs=True )
+@group_pages.response(200, NodeResponse)
+@login_required
+def post_groups(resp=None, **kwargs):
+    return _get_groups(resp=resp, **kwargs)
+
+def _get_groups(resp=None, **kwargs):
+    resp = resp or ResponseFormater()
     query_args = dict()
-    if "name" in args:     
-        if boolean_parser(args.get("regex",False)):
-            regex_name = re.compile("^{}$".format(args.get("name").strip(" ").lstrip("^").rstrip("$")))
+    if "name" in kwargs:     
+        if kwargs.get("regex",False):
+            regex_name = re.compile("^{}$".format(kwargs.get("name").strip(" ").lstrip("^").rstrip("$")))
             query_args["name"] = regex_name
         else:
-            regex_name = re.compile(r"^{}$".format(re.escape(args.get("name")).replace("\*",".*")))
+            regex_name = re.compile(r"^{}$".format(re.escape(kwargs.get("name")).replace("\*",".*")))
             query_args["name"] = regex_name
     o_groups = Group.objects(**query_args)
     resp.add_result(o_groups)
     return resp.get_response()
 
-
 @group_pages.route('/api/v1/inventory/groups', methods=['PUT'])
+@group_pages.arguments(GroupPutQueryArgsSchema, location='query', as_kwargs=True )
+@group_pages.arguments(GroupPutQueryArgsSchema, location='json', as_kwargs=True )
 @login_required
-def put_groups(resp=None):
+def put_groups(resp=None, **kwargs):
     if resp is None:
         resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
 
-    name = args.get("name", None)
+    name = kwargs.get("name", None)
     if name is None:
         abort(400, description="name not defined in request")
 
@@ -57,15 +66,10 @@ def put_groups(resp=None):
             resp.failed(msg='%s already exist' % (name))
             return resp.get_response()
 
-    if "child_groups" in args or "child_groups_present" in args:
-        child_groups = []
-        child_groups.extend(list_parser(args.get("child_groups", [])))
-        child_groups.extend(list_parser(args.get("child_groups_present", [])))
-        child_groups = list(set(child_groups))
-
-        for child_group in child_groups:
+    if  "child_groups_present" in kwargs:
+        for child_group in kwargs.get("child_groups", []):
             o_child_group = Group.objects(name=child_group).first()
-            if not o_child_group and args.get('create_groups', True):
+            if not o_child_group and kwargs.get('create_groups', True):
                 o_child_group = Group(name=child_group)
                 o_child_group.save()
                 resp.changed()
@@ -80,11 +84,11 @@ def put_groups(resp=None):
                 resp.log(
                     "Can't add {} as child group. Group does not exist.")
 
-    if "child_groups_set" in args:
+    if "child_groups_set" in kwargs:
         o_child_groups = []
-        for child_group in list_parser(args.get("child_groups_set", [])):
+        for child_group in kwargs.get("child_groups_set", []):
             o_child_group = Group.objects(name=child_group).first()
-            if not o_child_group and args.get('create_groups', True):
+            if not o_child_group and kwargs.get('create_groups', True):
                 o_child_group = Group(name=child_group)
                 o_child_group.save()
                 resp.changed()
@@ -105,8 +109,8 @@ def put_groups(resp=None):
                 resp.log(
                     "Set {} as child-group of {}".format(','.join([cg.name for cg in o_child_groups]), o_group.name))
 
-    if "child_groups_absent" in args:
-        for child_group in list_parser(args.get("child_groups_absent")):
+    if "child_groups_absent" in kwargs:
+        for child_group in kwargs.get("child_groups_absent"):
             o_child_group = Group.objects(name=child_group).first()
             if o_child_group is None:
                 resp.log("{} group does not exist".format(child_group))
@@ -119,16 +123,15 @@ def put_groups(resp=None):
                 resp.log(
                     "{} is not a child-group of {}".format(child_group, name))
 
-    if "hosts" in args:
-        hosts = list_parser(args.get("hosts")) or list_parser(
-            args.get("hosts_present", []))
+    if "hosts_present" in kwargs:
+        hosts = kwargs.get("hosts_present", [])
 
         o_hosts = Host.objects(name__in=hosts)
         hosts_not_found = list(
             set(hosts).difference(set(o_hosts.scalar('name'))))
         if len(hosts_not_found) > 0:
             resp.log("Hosts not found: {}".format(
-                ",".join(hosts_not_found)))
+                ", ".join(hosts_not_found)))
         o_hosts_to_add = set(o_hosts).difference(o_group["hosts"])
         if len(o_hosts_to_add) > 0:
             o_group["hosts"].extend(o_hosts_to_add)
@@ -136,22 +139,22 @@ def put_groups(resp=None):
 
             resp.log("Add {} to hosts".format(
                 ",".join(map(lambda h: h.name, o_hosts_to_add))))
-    if "hosts_set" in args:
-        hosts = list_parser(args.get("hosts_set"))
+    if "hosts_set" in kwargs:
+        hosts = kwargs.get("hosts_set")
 
         o_hosts = Host.objects(name__in=hosts)
         hosts_not_found = list(
             set(hosts).difference(set(o_hosts.scalar('name'))))
         if len(hosts_not_found) > 0:
             resp.log("Hosts not found: {}".format(
-                ",".join(hosts_not_found)))
-        if set(o_group.get("hosts")) != set(o_hosts):
+                ", ".join(hosts_not_found)))
+        if set(o_group["hosts"]) != set(o_hosts):
             o_group["hosts"] = list(o_hosts)
             resp.changed()
             resp.log("Set {} to hosts".format(
                 ",".join(o_hosts_to_add.scalar('name'))))
-    if "hosts_absent" in args:
-        hosts = list_parser(args.get("hosts_absent"))
+    if "hosts_absent" in kwargs:
+        hosts = kwargs.get("hosts_absent")
         o_hosts = Host.objects(name__in=hosts)
         o_hosts_to_remove = set(o_hosts).union(set(o_group["hosts"]))
         for o_host in o_hosts_to_remove:
@@ -160,14 +163,14 @@ def put_groups(resp=None):
             resp.log("Remove {} from hosts".format(o_host.get("name")))
 
     # Set variables
-    barn_vars = args.get("vars", {})
+    barn_vars = kwargs.get("vars", {})
     for k, v in barn_vars.items():
         if o_group.vars.get(k, None) != v:
             o_group.vars[k] = v
             resp.changed()
 
     # Delete variables
-    vars_to_remove = args.get("vars_absent", [])
+    vars_to_remove = kwargs.get("vars_absent", [])
     for var_to_remove in vars_to_remove:
         if var_to_remove in o_group.vars:
             del o_group.vars[var_to_remove]
@@ -177,25 +180,23 @@ def put_groups(resp=None):
     if resp.get_changed():
         o_group.save()
 
-    parent_groups_present = list_parser(
-        args.get("parent_groups", args.get("parent_groups_present", [])))
-    parent_groups_set = list_parser(args.get("parent_groups_set", []))
-    parent_groups_absent = list_parser(args.get("parent_groups_absent", []))
+    parent_groups_present = kwargs.get("parent_groups_present", [])
+    parent_groups_set = kwargs.get("parent_groups_set", [])
+    parent_groups_absent = kwargs.get("parent_groups_absent", [])
     used_groups_list = parent_groups_present + parent_groups_set
     used_groups_list = list(set(used_groups_list))
-    logging.debug("list used groups: %s", ",".join(used_groups_list))
 
     # Add groups who do not exist
     for g in used_groups_list:
         if Group.objects(name=g).first() is None:
-            if args.get('create_groups', True):
+            if kwargs.get('create_groups', True):
                 Group(name=g).save()
                 resp.log("Create group {}".format(g))
                 resp.changed()
             else:
                 resp.log("{} group does not exist.".format(g))
 
-    if "parent_groups" in args or "parent_groups_present" in args:
+    if "parent_groups_present" in kwargs:
         o_parent_groups_to_add = Group.objects(
             name__in=parent_groups_present, child_groups__nin=[o_group])
 
@@ -207,7 +208,7 @@ def put_groups(resp=None):
             resp.log(
                 "Add {} to child-groups of {}".format(o_group.name, s_parent_groups_to_add))
 
-    if "parent_groups_set" in args:
+    if "parent_groups_set" in kwargs:
         o_parent_groups_to_add = Group.objects(
             name__in=parent_groups_set, child_groups__nin=[o_group])
         if len(o_parent_groups_to_add) > 0:
@@ -228,7 +229,7 @@ def put_groups(resp=None):
             resp.log(
                 "Remove {} from child-groups of {}".format(o_group.name, s_parent_groups_to_remove))
 
-    if "parent_groups_absent" in args:
+    if "parent_groups_absent" in kwargs:
         o_parent_groups_to_remove = Group.objects(
             name__in=parent_groups_absent, child_groups__in=[o_group])
         if len(o_parent_groups_to_remove) > 0:
@@ -243,15 +244,22 @@ def put_groups(resp=None):
 
 
 @group_pages.route('/api/v1/inventory/groups', methods=['DELETE'])
+@group_pages.arguments(GroupQueryArgsSchema, location='query', as_kwargs=True )
+@group_pages.arguments(GroupQueryArgsSchema, location='json', as_kwargs=True )
+@group_pages.response(200, NodeResponse)
 @login_required
-def delete_groups():
+def delete_groups(**kwargs):
     resp = ResponseFormater()
-    args = merge_args_data(request.args, request.get_json(silent=True))
     query_args = dict()
-    if "name" in args:
-        query_args["name__in"] = list_parser(args.get("name"))
+    if "name" in kwargs:     
+        if kwargs.get("regex",False):
+            regex_name = re.compile("^{}$".format(kwargs.get("name").strip(" ").lstrip("^").rstrip("$")))
+            query_args["name"] = regex_name
+        else:
+            regex_name = re.compile(r"^{}$".format(re.escape(kwargs.get("name")).replace("\*",".*")))
+            query_args["name"] = regex_name
     else:
-        resp.failed(msg='name not defined')
+        resp.failed(msg='Name not defined')
         return resp.get_response()
 
     o_groups = Group.objects(**query_args)
@@ -260,7 +268,7 @@ def delete_groups():
         pull_all__child_groups=o_groups)
 
     if o_groups.count() < 1:
-        resp.failed(msg='%s not found' % (args.get('name')))
+        resp.failed(msg='%s not found' % (kwargs.get('name')))
         return resp.get_response()
     s_groups = ','.join(o_groups.scalar('name'))
     o_groups.delete()
