@@ -1,7 +1,7 @@
 from marshmallow import Schema, fields, pre_load, validate
-import marshmallow
 from marshmallow.utils import pprint
-from app.utils import list_parser
+from flask_smorest.fields import Upload
+from app.utils import boolean_parser, list_parser
 
 class CrateSchema(Schema):
     id=fields.Str()
@@ -98,6 +98,31 @@ class GroupPutQueryArgsSchema(Schema):
                 for alias in list_parser(v.metadata.get("aliases",[])):
                     if f not in data and alias in data:
                         data[f] = data.pop(alias, None)
+        return data
+
+class ExportQueryArgsSchema(Schema):
+    full = fields.Boolean(default=True, description="Keep empty fields", boolean_parser=True)
+    format = fields.String(default="json", description="Format of the export", validate=validate.OneOf(["yaml","yml","json"]))
+    file = fields.Boolean(default=False, description="Download export as file", boolean_parser=True)
+
+    @pre_load
+    def string2bool(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("boolean_parser",False):
+                if f in data:
+                    data[f] = boolean_parser(data.get(f))
+        return data
+
+class UploadQueryArgsSchema(Schema):
+    files = fields.List(Upload())
+    keep = fields.Boolean(default=False, description="Keep existing barn data", boolean_parser=True)
+    
+    @pre_load
+    def string2bool(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("boolean_parser",False):
+                if f in data:
+                    data[f] = boolean_parser(data.get(f))
         return data
 
 class BaseResponse(Schema):

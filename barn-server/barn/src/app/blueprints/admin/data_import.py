@@ -8,19 +8,26 @@ from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Host, Group, Node
 from app.utils.formater import ResponseFormater
+from webargs.flaskparser import use_kwargs
+from marshmallow import fields
+
+from app.utils.schemas import UploadQueryArgsSchema
 
 
 import_pages = Blueprint('import', __name__)
 
 @import_pages.route('/api/v1/admin/import', methods=['PUT','POST'])
+@import_pages.arguments(UploadQueryArgsSchema, location='files', as_kwargs=True)
+@import_pages.arguments(UploadQueryArgsSchema, location='json', as_kwargs=True)
 @login_required
-def put_file_import():
+def put_file_import(**kwargs):
+
     resp = ResponseFormater()
     hosts_to_add = []
     groups_to_add = []
-    keep_existing_nodes =  str(request.args.get("keep") or next(iter(request.form.getlist('keep')), None)).lower() in ["on","true","1","yes"]
+    keep_existing_nodes =  kwargs.get("keep")
 
-    for file in request.files.values():
+    for file in kwargs.get("files",[]):
         fileextention = file.filename.split(".")[-1]
         to_add = None
         if fileextention.lower() in ("yaml", "yml"):

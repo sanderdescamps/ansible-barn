@@ -9,6 +9,11 @@ inventory_pages = Blueprint('inventory', __name__)
 @inventory_pages.route('/api/v1/ansible_inventory', methods=['GET'])
 @login_required
 def get_ansible_inventory_file():
+    """Generate Ansible inventory
+    
+    Returns a Ansible compatible json inventory. 
+    ---
+    """
     o_hosts = Host.objects()
     d_hosts = {}
     for host in o_hosts:
