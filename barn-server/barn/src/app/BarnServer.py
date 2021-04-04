@@ -51,7 +51,23 @@ class BarnServer(Flask):
     def __init__(self, config_path, **kwargs):
         super().__init__(__name__, **kwargs)
         self.load_config_file(config_path)
-        self.spec = Api(self, spec_kwargs=dict(response_plugin=ResponseReferencesPlugin(BarnError)))
+        self.spec = Api(self, spec_kwargs=dict(
+            response_plugin=ResponseReferencesPlugin(BarnError),
+            security = [{"bearerAuth": []}],
+            components = { 
+                "securitySchemes": {
+                    "basicAuth": {
+                        "type": "http",
+                        "scheme": "basic"
+                    }
+                },
+                # "bearerAuth": {
+                #         "type":"http",
+                #         "scheme": "bearer",
+                #         "bearerFormat": "JWT"
+                # }
+            }))
+        
 
         # self.spec.DEFAULT_ERROR_RESPONSE_NAME = None
         self._register_blueprints()
