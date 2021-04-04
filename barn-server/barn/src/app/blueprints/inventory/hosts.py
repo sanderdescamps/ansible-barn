@@ -1,6 +1,5 @@
 import re
 import logging
-from flask import request
 from flask_smorest import Blueprint
 from flask_login import login_required
 from mongoengine.errors import NotUniqueError
