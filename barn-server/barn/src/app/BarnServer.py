@@ -136,8 +136,10 @@ class BarnServer(Flask):
             OPENAPI_URL_PREFIX = openapi_config.get("url_prefix",'/'),
             OPENAPI_JSON_PATH = openapi_config.get("json_path",'openapi.json'),
             OPENAPI_SWAGGER_UI_PATH = openapi_config.get("swagger_ui_path",'swagger-ui'),
-            OPENAPI_SWAGGER_UI_URL = openapi_config.get("swagger_ui_url",'https://cdn.jsdelivr.net/npm/swagger-ui-dist/')
-            ))
+            OPENAPI_SWAGGER_UI_URL = openapi_config.get("swagger_ui_url",'https://cdn.jsdelivr.net/npm/swagger-ui-dist/'),
+            OPENAPI_REDOC_PATH=openapi_config.get("redoc_path","redoc"),
+            OPENAPI_REDOC_URL=openapi_config.get("redoc_url","https://rebilly.github.io/ReDoc/releases/v1.x.x/redoc.min.js"),
+        ))
 
     def create_admin_user(self):
         """
