@@ -1,6 +1,7 @@
 import jwt
 import datetime
 import logging
+import re
 import uuid
 from flask import request, abort, current_app, jsonify
 from flask_smorest import Blueprint
@@ -11,21 +12,34 @@ from app.models import User
 from app.utils.formater import ResponseFormater
 from app.utils import list_parser, merge_args_data, generate_password, boolean_parser
 from app.auth import admin_permission
-
-
+from app.utils.schemas import RegisterUserArgsSchema, UserPutQueryArgsSchema, UserQueryArgsSchema
 
 user_pages = Blueprint('user', __name__)
 
 
-@user_pages.route('/api/v1/admin/register', methods=['GET', 'POST'])
+@user_pages.route('/api/v1/admin/register', methods=['GET'])
+@user_pages.arguments(RegisterUserArgsSchema, location='query', as_kwargs=True)
+@user_pages.doc(deprecated=True)
 @login_required
-def signup_user():
+def get_signup_user(**kwargs):
+    """Register new user"""
+    return _signup_user(**kwargs)
+
+@user_pages.route('/api/v1/admin/register', methods=['POST'])
+@user_pages.arguments(RegisterUserArgsSchema, location='query', as_kwargs=True)
+@user_pages.arguments(RegisterUserArgsSchema, location='json', as_kwargs=True)
+@user_pages.doc(deprecated=True)
+@login_required
+def post_signup_user(**kwargs):
+    """Register new user"""
+    return _signup_user(**kwargs)
+
+def _signup_user(**kwargs):
     resp = ResponseFormater()
-    data = request.get_json()
-    hashed_password = generate_password_hash(data['password'], method='sha256')
+    hashed_password = kwargs.get("password_hash") or generate_password_hash(kwargs.get('password'), method='sha256')
     try:
         new_user = User(public_id=str(uuid.uuid4()),
-                        name=data['name'], username=data['username'],
+                        name=kwargs.get('name'), username=kwargs.get('username'),
                         password_hash=hashed_password, admin=False)
         new_user.save()
     except NotUniqueError:
@@ -33,17 +47,38 @@ def signup_user():
 
     return resp.succeed(msg='registered successfully').get_response()
 
-
-@user_pages.route('/api/v1/admin/users', methods=['GET', 'POST'])
+@user_pages.route('/api/v1/admin/users', methods=['GET'])
+@user_pages.arguments(UserQueryArgsSchema, location='query', as_kwargs=True)
 @login_required
 @admin_permission.require(http_exception=403)
-def get_user():
+def get_user(**kwargs):
+    """List of users
+
+    """
+    return _get_user(**kwargs)
+
+@user_pages.route('/api/v1/admin/users', methods=['POST'])
+@user_pages.arguments(UserQueryArgsSchema, location='query', as_kwargs=True)
+@user_pages.arguments(UserQueryArgsSchema, location='json', as_kwargs=True)
+@login_required
+@admin_permission.require(http_exception=403)
+def post_user(**kwargs):
+    """List of users
+
+    """    
+    return _get_user(**kwargs)
+
+def _get_user(**kwargs):
     resp = ResponseFormater()
-    user_kwargs = request.args if request.method == 'GET' else request.get_json(
-        silent=True) or {}
-    filtered_user_kwargs = {key: user_kwargs.get(key) for key in [
-        "name", "username", "active", "public_id"] if key in user_kwargs}
-    o_users = User.objects(**filtered_user_kwargs)
+    query_args = {}
+    if "name" in kwargs:
+        query_args["name"] = re.compile(r'.*{}.*'.format(kwargs.get("name")), re.IGNORECASE)
+    
+    for key in ["username", "active", "public_id"]:
+        if key in kwargs:
+            query_args[key] = kwargs.get(key)
+
+    o_users = User.objects(**query_args)
     if o_users:
         resp.add_result(o_users)
     else:
@@ -51,28 +86,32 @@ def get_user():
     return resp.get_response()
 
 
-@user_pages.route('/api/v1/admin/users', defaults={'action': "present"}, methods=['PUT'])
-@user_pages.route('/api/v1/admin/users/<string:action>', methods=['PUT'])
+@user_pages.route('/api/v1/admin/users', methods=['PUT'])
+@user_pages.arguments(UserPutQueryArgsSchema, location='json', as_kwargs=True)
 @login_required
 @admin_permission.require(http_exception=403)
-def put_user(action="present"):
+def put_user_short(**kwargs):
+    return _put_user(action=kwargs.get("action","present"), **kwargs)
 
+@user_pages.route('/api/v1/admin/users/<string:action>', methods=['PUT'])
+@user_pages.arguments(UserPutQueryArgsSchema, location='json', as_kwargs=True)
+@login_required
+@admin_permission.require(http_exception=403)
+def put_user(action="present", **kwargs):
+    return _put_user(action=action, **kwargs)
+
+def _put_user(action="present", **kwargs):
     resp = ResponseFormater()
-    request_args = request.get_json(silent=True)
-    if request_args is None:
-        abort(400, description="Bad Request")
 
-    username = request_args.get("username",None)
-    if not username:
-        resp.failed("{} not defined".format("username"))
-        return resp.get_response()
+    username = kwargs.get("username",None)
+    action = action or kwargs.get("action")
 
     o_user = User.objects(username=username).first()
     if not o_user:
         if action == "present" or action == "add":
             try:
-                allowed_args = ["username", "name", "active", "roles", "password", "password_hash"]
-                user_kwargs = {key:value for key,value in request_args.items() if key in allowed_args}
+                allowed_args = ["admin","username", "name", "active", "roles", "password", "password_hash"]
+                user_kwargs = {key:value for key,value in kwargs.items() if key in allowed_args}
                 resp += _add_user(**user_kwargs)
             except NotUniqueError:
                 resp.failed("User already exist", status=400)
@@ -81,12 +120,12 @@ def put_user(action="present"):
     else:
         if action == "update" or action == "present":
             allowed_args = ["username", "name", "active", "roles", "password", "password_hash"]
-            user_kwargs = {key:value for key,value in request_args.items() if key in allowed_args}
+            user_kwargs = {key:value for key,value in kwargs.items() if key in allowed_args}
             resp += _modify_user(**user_kwargs)
         elif action == "add":
             resp.failed("User already exist", status=400)
         elif action == "passwd":
-            new_password = request_args.get("password")
+            new_password = kwargs.get("password")
             if new_password:
                 resp += _modify_user(username=username, password=new_password)
             else: 
