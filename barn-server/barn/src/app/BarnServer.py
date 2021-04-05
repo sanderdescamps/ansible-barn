@@ -31,20 +31,9 @@ DEFAULT_BARN_CONFIG = {
     "debug_mode": False
 }
 
-# SWAGGER_URL = '/swagger'
-# API_URL = '/static/swagger/swagger.yml'
-# SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
-#     SWAGGER_URL,
-#     API_URL,
-#     config={
-#         'app_name': "Ansible Barn",
-#         'apisSorter': "alpha",
-#         'operationsSorter': "alpha",
-#         'layout': "BaseLayout"
-#     })
 
 #Swagger
-from flask_smorest import Api, Blueprint, abort
+from flask_smorest import Api
 
 
 class BarnServer(Flask):
@@ -199,8 +188,8 @@ class BarnServer(Flask):
         self.spec.register_blueprint(inventory_pages)
         self.spec.register_blueprint(export_pages)
         self.spec.register_blueprint(import_pages)
-        self.spec.register_blueprint(views)
-        self.spec.register_blueprint(login_pages)
+        # self.spec.register_blueprint(views)
+        # self.spec.register_blueprint(login_pages)
         if self.config.get("BARN_CONFIG", {}).get("debug_mode", False):
             self.spec.register_blueprint(debug_pages)
 
