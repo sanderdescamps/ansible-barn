@@ -155,6 +155,14 @@ class UserQueryArgsSchema(Schema):
                     data[f] = boolean_parser(data.get(f))
         return data
 
+class UserPasswdSchema(Schema):
+    username=fields.String(description="Username of the user.", required=True)
+    password=fields.String(description="Password to authenticate")
+    password_hash=fields.String(description="""
+    use:
+        python -c 'from werkzeug.security import generate_password_hash; print(generate_password_hash("password", method="sha256"))'
+    """, validate=validate.Regexp(r"sha(256|512)\$([^\$]+)\$([^\$]+)$"))
+
 class UserPutQueryArgsSchema(Schema):
     username=fields.String(description="Username of the user.", required=True)
     name=fields.String(description="Name of the user contains")

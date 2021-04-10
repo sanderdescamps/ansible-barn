@@ -12,7 +12,7 @@ from app.models import User
 from app.utils.formater import ResponseFormater
 from app.utils import list_parser, merge_args_data, generate_password, boolean_parser
 from app.auth import admin_permission
-from app.utils.schemas import RegisterUserArgsSchema, UserPutQueryArgsSchema, UserQueryArgsSchema
+from app.utils.schemas import RegisterUserArgsSchema, UserPasswdSchema, UserPutQueryArgsSchema, UserQueryArgsSchema
 
 user_pages = Blueprint('user', __name__)
 
@@ -91,7 +91,7 @@ def _get_user(**kwargs):
 @login_required
 @admin_permission.require(http_exception=403)
 def put_user_short(**kwargs):
-    return _put_user(action=kwargs.get("action","present"), **kwargs)
+    put_user(**kwargs)
 
 @user_pages.route('/api/v1/admin/users/<string:action>', methods=['PUT'])
 @user_pages.arguments(UserPutQueryArgsSchema, location='json', as_kwargs=True)
@@ -124,18 +124,40 @@ def _put_user(action="present", **kwargs):
             resp += _modify_user(**user_kwargs)
         elif action == "add":
             resp.failed("User already exist", status=400)
-        elif action == "passwd":
-            new_password = kwargs.get("password")
-            if new_password:
-                resp += _modify_user(username=username, password=new_password)
-            else: 
-                resp.failed("password not defined", status=400)
+
 
     #create user
     if action == "present":
         pass
 
     return resp.get_response()
+
+@user_pages.route('/api/v1/admin/users/passwd', methods=['PUT'])
+@user_pages.arguments(UserPasswdSchema, location='json', as_kwargs=True)
+@login_required
+def put_user_passwd(**kwargs):
+    """Change user password
+
+    """
+    resp = ResponseBuilder()
+    username = kwargs.get("username")
+    o_current_user = User.objects(public_id=current_user.get_id()).first()
+    if not (username == o_current_user.username or o_current_user.has_role("admin")):
+        return resp.failed("Permission denied").get_response()
+
+    o_user = User.objects(username=username).first()
+    if not o_user:
+        return resp.failed("User does not exist").get_response()
+
+    if "password_hash" in kwargs:
+        resp += _modify_user(username=username, password_hash=kwargs.get("password_hash") )
+    elif "password" in kwargs:
+        resp += _modify_user(username=username, password=kwargs.get("password") )
+    else:
+        return resp.bad_request("Password not defined").get_response()
+    return resp.get_response()
+
+
 
 def _add_user(**kwargs):
     resp = ResponseFormater()
@@ -179,10 +201,12 @@ def _modify_user(**user_kwargs):
         
     if "password_hash" in user_kwargs and user_kwargs.get("password_hash") != o_user.password_hash:
         password_hash = user_kwargs.get("password_hash")
-        if password_hash.startswith("sha256$"):
-            o_user.password_hash = password_hash
-        else:
+        if not password_hash.startswith("sha256$"):
             resp.log("invalid password hash")
+        elif o_user.password_hash != password_hash:
+            o_user.password_hash = password_hash
+            resp.log("Password updated")
+            resp.changed()
     elif "password" in user_kwargs:
         password = user_kwargs.pop("password").strip()
         if not check_password_hash(o_user.password_hash, password):
