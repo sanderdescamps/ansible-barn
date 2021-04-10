@@ -24,25 +24,25 @@ from app.models import User
 #                     current_user = User.objects(
 #                         public_id=data.get("public_id")).first()
 #                 except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
-#                     return resp.authentication_error(msg='token is invalid').get_response()
+#                     return resp.authentication_error(msg='token is invalid').build()
 #                 except jwt.exceptions.ExpiredSignatureError:
-#                     return resp.authentication_error(msg='token expired').get_response()
+#                     return resp.authentication_error(msg='token expired').build()
 #             elif request.authorization and request.authorization.username and request.authorization.password:
 #                 auth = request.authorization
 #                 current_user = User.objects(username=auth.username).first()
 #                 if current_user is None:
-#                     return resp.authentication_error(msg='invalid user').get_response()
+#                     return resp.authentication_error(msg='invalid user').build()
 #                 if not check_password_hash(current_user.password_hash, auth.password):
-#                     return resp.authentication_error(msg='invalid username and password').get_response()
+#                     return resp.authentication_error(msg='invalid username and password').build()
 #             elif "guest" in roles:
 #                 kwargs["current_user"] = current_user
 #                 return f(*args, **kwargs)
 
 #             if current_user is None:
-#                 return resp.authentication_error(msg='Unauthorized request. Username/password or token required').get_response()
+#                 return resp.authentication_error(msg='Unauthorized request. Username/password or token required').build()
 #             missing_roles = current_user.missing_roles(roles)
 #             if len(missing_roles) > 1:
-#                 return resp.authentication_error(msg='Not permited, missing roles (%s)' % (','.join(missing_roles))).get_response()
+#                 return resp.authentication_error(msg='Not permited, missing roles (%s)' % (','.join(missing_roles))).build()
 #             kwargs["current_user"] = current_user
 #             return f(*args, **kwargs)
 

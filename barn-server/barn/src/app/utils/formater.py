@@ -156,7 +156,7 @@ class ResponseBuilder():
         """ return if a change is registered """
         return self._changed
 
-    def get_response(self):
+    def build(self):
         """
             return json response object which can be used by Flask
         """

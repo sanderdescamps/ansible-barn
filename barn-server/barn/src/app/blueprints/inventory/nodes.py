@@ -43,7 +43,7 @@ def _get_nodes(**kwargs):
             query_args["_cls"] = "Node.Group"
     o_nodes = Node.objects(**query_args)
     resp.add_result(o_nodes)
-    return resp.get_response()
+    return resp.build()
 
 # @node_pages.route('/api/v1/inventory/nodes', methods=['PUT'])
 # @login_required
@@ -53,14 +53,14 @@ def _get_nodes(**kwargs):
 #     node_type = args.get("type", None)
 #     if not node_type:
 #         resp.failed(msg='type not defined')
-#         return resp.get_response()
+#         return resp.build()
 #     elif node_type.lower() == "host":
 #         return put_hosts(resp=resp)
 #     elif node_type.lower() == "group":
 #         return put_groups(resp=resp)
 #     else:
 #         resp.failed(msg='unknown type: %s' % (node_type))
-#         return resp.get_response()
+#         return resp.build()
 
 
 # @node_pages.route('/api/v1/inventory/nodes', methods=['DELETE'])
@@ -72,14 +72,14 @@ def _get_nodes(**kwargs):
 #         query_args["name__in"] = list_parser(kwargs.get("name"))
 #     else:
 #         resp.failed(msg='name not defined')
-#         return resp.get_response()
+#         return resp.build()
 
 
 #     o_nodes = Node.objects(**query_args)
 #     if o_nodes.count() < 1:
 #         resp.failed(msg='%s not found' % (kwargs.get('name')))
-#         return resp.get_response()
+#         return resp.build()
 #     s_nodes = ','.join(o_nodes.scalar('name'))
 #     o_nodes.delete()
 #     resp.succeed(msg='%s have been deleted' % (s_nodes))
-#     return resp.get_response()
+#     return resp.build()

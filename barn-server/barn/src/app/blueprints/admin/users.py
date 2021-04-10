@@ -43,9 +43,9 @@ def _signup_user(**kwargs):
                         password_hash=hashed_password, admin=False)
         new_user.save()
     except NotUniqueError:
-        return resp.failed(msg='user already exists').get_response()
+        return resp.failed(msg='user already exists').build()
 
-    return resp.succeed(msg='registered successfully').get_response()
+    return resp.succeed(msg='registered successfully').build()
 
 @user_pages.route('/api/v1/admin/users', methods=['GET'])
 @user_pages.arguments(UserQueryArgsSchema, location='query', as_kwargs=True)
@@ -83,7 +83,7 @@ def _get_user(**kwargs):
         resp.add_result(o_users)
     else:
         resp.failed(msg="User(s) not found", status=404)
-    return resp.get_response()
+    return resp.build()
 
 
 @user_pages.route('/api/v1/admin/users', methods=['PUT'])
@@ -127,7 +127,7 @@ def put_user(action="present", **kwargs):
     if action == "present":
         pass
 
-    return resp.get_response()
+    return resp.build()
 
 @user_pages.route('/api/v1/admin/users/passwd', methods=['PUT'])
 @user_pages.arguments(UserPasswdSchema, location='json', as_kwargs=True)
@@ -140,19 +140,19 @@ def put_user_passwd(**kwargs):
     username = kwargs.get("username")
     o_current_user = User.objects(public_id=current_user.get_id()).first()
     if not (username == o_current_user.username or o_current_user.has_role("admin")):
-        return resp.failed("Permission denied").get_response()
+        return resp.failed("Permission denied").build()
 
     o_user = User.objects(username=username).first()
     if not o_user:
-        return resp.failed("User does not exist").get_response()
+        return resp.failed("User does not exist").build()
 
     if "password_hash" in kwargs:
         resp += _modify_user(username=username, password_hash=kwargs.get("password_hash") )
     elif "password" in kwargs:
         resp += _modify_user(username=username, password=kwargs.get("password") )
     else:
-        return resp.bad_request("Password not defined").get_response()
-    return resp.get_response()
+        return resp.bad_request("Password not defined").build()
+    return resp.build()
 
 
 
@@ -236,7 +236,7 @@ def delete_user():
         resp.log("User(s) removed")
     else:
         resp.failed(msg="User(s) not found", status=404)
-    return resp.get_response()
+    return resp.build()
 
 @user_pages.route('/token', methods=['GET', 'POST'])
 @user_pages.route('/api/v1/users/token', methods=['GET', 'POST'])

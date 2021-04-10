@@ -68,7 +68,7 @@ def test():
     logging.getLogger().warning("warning message")
     logging.getLogger().info("info message")
     logging.getLogger().debug("debug message")
-    return ResponseBuilder().succeed(msg="it works").get_response()
+    return ResponseBuilder().succeed(msg="it works").build()
     # return jsonify(dict(msg="it works"))
 
 
@@ -76,7 +76,7 @@ def test():
 def schemas(**kwargs):
     schema =  BaseResponse()
     return schema.dump(dict(failed=False))
-    # return ResponseBuilder().succeed(msg="it works").get_response()
+    # return ResponseBuilder().succeed(msg="it works").build()
     # return jsonify(dict(msg="it works"))
 
 

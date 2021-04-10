@@ -50,7 +50,7 @@ def _get_hosts(resp=None, **kwargs):
             kwargs.get("regex", False)) else kwargs.get('name')
         resp.succeed(msg='No hosts found for {}'.format(log_name))
     resp.add_result(o_hosts)
-    return resp.get_response()
+    return resp.build()
 
 
 @host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])
@@ -65,18 +65,18 @@ def put_hosts(action="present", resp=None, **kwargs):
     name = kwargs.get("name", None)
     if name is None:
         resp.failed(msg='name not defined')
-        return resp.get_response()
+        return resp.build()
 
     # Create Host
     o_host = Host.objects(name=name).first()
     if o_host is not None and action == "add":
         resp.failed(msg='%s already exist' % (kwargs.get("name")))
-        return resp.get_response()
+        return resp.build()
     elif o_host is None:
         if action == "update":
             resp.failed(msg='Host not found: %s Does not exist' %
                         (kwargs.get("name")))
-            return resp.get_response()
+            return resp.build()
         else:
             try:
                 o_host = Host(name=name)
@@ -84,7 +84,7 @@ def put_hosts(action="present", resp=None, **kwargs):
                     name), status=HTTPStatus.CREATED)
             except NotUniqueError:
                 resp.failed(msg='%s already exist' % (kwargs.get("name")))
-                return resp.get_response()
+                return resp.build()
 
     # Set variables
     barn_vars = kwargs.get("vars", {})
@@ -157,7 +157,7 @@ def put_hosts(action="present", resp=None, **kwargs):
             g.save()
             resp.changed()
 
-    return resp.get_response()
+    return resp.build()
 
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['DELETE'])
@@ -181,7 +181,7 @@ def delete_hosts(**kwargs):
             query_args["name__in"] = regex_names
     else:
         resp.failed(msg='Name not defined')
-        return resp.get_response()
+        return resp.build()
 
     o_hosts = Host.objects(**query_args)
 
@@ -195,4 +195,4 @@ def delete_hosts(**kwargs):
         s_hosts = ','.join(o_hosts.scalar('name'))
         o_hosts.delete()
         resp.succeed(msg='Delete host %s' % (s_hosts), changed=True)
-    return resp.get_response()
+    return resp.build()

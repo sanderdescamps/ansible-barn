@@ -40,7 +40,7 @@ def _get_groups(resp=None, **kwargs):
             query_args["name"] = regex_name
     o_groups = Group.objects(**query_args)
     resp.add_result(o_groups)
-    return resp.get_response()
+    return resp.build()
 
 @group_pages.route('/api/v1/inventory/groups', methods=['PUT'])
 @group_pages.arguments(GroupPutQueryArgsSchema, location='query', as_kwargs=True )
@@ -64,7 +64,7 @@ def put_groups(resp=None, **kwargs):
             resp.log("Create group {}".format(name), main=True)
         except NotUniqueError:
             resp.failed(msg='%s already exist' % (name))
-            return resp.get_response()
+            return resp.build()
 
     if  "child_groups_present" in kwargs:
         for child_group in kwargs.get("child_groups", []):
@@ -240,7 +240,7 @@ def put_groups(resp=None, **kwargs):
             resp.log(
                 "Remove {} from child-groups of {}".format(o_group.name, s_parent_groups_to_remove))
 
-    return resp.get_response()
+    return resp.build()
 
 
 @group_pages.route('/api/v1/inventory/groups', methods=['DELETE'])
@@ -260,7 +260,7 @@ def delete_groups(**kwargs):
             query_args["name"] = regex_name
     else:
         resp.failed(msg='Name not defined')
-        return resp.get_response()
+        return resp.build()
 
     o_groups = Group.objects(**query_args)
     logging.getLogger().info("remove groups: %s", ','.join(o_groups.scalar('name')))
@@ -269,9 +269,9 @@ def delete_groups(**kwargs):
 
     if o_groups.count() < 1:
         resp.failed(msg='%s not found' % (kwargs.get('name')))
-        return resp.get_response()
+        return resp.build()
     s_groups = ','.join(o_groups.scalar('name'))
     o_groups.delete()
 
     resp.succeed(msg='%s have been deleted' % (s_groups))
-    return resp.get_response()
+    return resp.build()

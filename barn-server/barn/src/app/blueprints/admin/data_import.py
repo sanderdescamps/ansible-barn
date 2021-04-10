@@ -35,22 +35,22 @@ def put_file_import(**kwargs):
                 to_add = yaml.load(file, Loader=yaml.FullLoader)
                 resp.log("Successfully loaded %s"%(file.filename))
             except yaml.YAMLError as _:
-                return resp.failed(msg="failed to read yaml file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
+                return resp.failed(msg="failed to read yaml file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).build()
         elif fileextention.lower() == "json":
             try:
                 to_add = json.load(file)
                 resp.log("Successfully loaded %s"%(file.filename))
             except json.JSONDecodeError as _:
-                return resp.failed(msg="failed to read json file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
+                return resp.failed(msg="failed to read json file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).build()
         elif fileextention.lower() == "ini":
             try:
                 data = file.read().decode('utf-8')
                 to_add = _convert_ini(data)
                 resp.log("Successfully loaded %s"%(file.filename))
             except Exception:
-                return resp.failed(msg="failed to read ini file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
+                return resp.failed(msg="failed to read ini file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).build()
         else:
-            return resp.failed("unsupported extention", changed=False, status=HTTPStatus.BAD_REQUEST).get_response()
+            return resp.failed("unsupported extention", changed=False, status=HTTPStatus.BAD_REQUEST).build()
 
 
         if "hosts" in to_add and isinstance(to_add["hosts"], list):
@@ -105,7 +105,7 @@ def put_file_import(**kwargs):
         resp.failed(msg="No valid hosts or groups in import")
 
     resp.log("Import completed")
-    return resp.get_response()
+    return resp.build()
 
 _COMMENT_MARKERS = frozenset((u';', u'#'))
 def _convert_ini(data):
