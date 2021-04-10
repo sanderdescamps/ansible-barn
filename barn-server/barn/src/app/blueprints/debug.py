@@ -4,7 +4,7 @@ from flask_login import login_required
 from webargs import fields
 from app.models import Group, Host, User
 from app.auth import admin_permission
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from app.utils.schemas import BaseResponse
 from flask_smorest import Blueprint
 
@@ -68,7 +68,7 @@ def test():
     logging.getLogger().warning("warning message")
     logging.getLogger().info("info message")
     logging.getLogger().debug("debug message")
-    return ResponseFormater().succeed(msg="it works").get_response()
+    return ResponseBuilder().succeed(msg="it works").get_response()
     # return jsonify(dict(msg="it works"))
 
 
@@ -76,7 +76,7 @@ def test():
 def schemas(**kwargs):
     schema =  BaseResponse()
     return schema.dump(dict(failed=False))
-    # return ResponseFormater().succeed(msg="it works").get_response()
+    # return ResponseBuilder().succeed(msg="it works").get_response()
     # return jsonify(dict(msg="it works"))
 
 

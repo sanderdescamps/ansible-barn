@@ -1,9 +1,12 @@
 from http import HTTPStatus
+from flask_smorest.response import ResponseMixin
 from mongoengine.queryset import QuerySet
-from flask import jsonify, make_response
+from flask import jsonify, make_response, Response
+from werkzeug.wrappers import Response
 from app.models import Node, Host, Group, User
 
-class ResponseFormater():
+
+class ResponseBuilder():
     def __init__(self):
         self._failed = False
         self._changed = False
@@ -14,8 +17,8 @@ class ResponseFormater():
         self._header = {}
 
     def __add__(self, other):
-        if isinstance(other, ResponseFormater):
-            new = ResponseFormater()
+        if isinstance(other, ResponseBuilder):
+            new = ResponseBuilder()
             new._failed = self._failed or other._failed
             new._changed = self._changed or other._changed
             new._status = self._status if self._status >= other._status else other._status
@@ -93,6 +96,19 @@ class ResponseFormater():
             'WWW.Authentication': 'Basic realm="login required"'
         }).failed(msg=msg, failed=True, status=401)
 
+    def bad_request(self,msg=None):
+        """Resister an incorrect request
+
+        Args:
+            msg (str, optional): Add message. Defaults to None.
+
+        Returns:
+            ResponseFormatter: return self
+        """
+        if msg:
+            self.log(msg, main=True)
+        return self.failed(msg="Bad request", failed=True, status=400)
+
     def log(self,message, main=False):
         """Add log message to the response 
 
@@ -105,32 +121,6 @@ class ResponseFormater():
         if main:
             self._msg = message
 
-
-    # def set_main_message(self, message):
-    #     """Set the main message of the response. Message will also be added to the msg_list. 
-
-    #     Args:
-    #         message (str): Message
-
-    #     Returns:
-    #         ResponseFormatter: return self
-    #     """
-    #     self._msg_list.append(message)
-    #     self._msg = message
-    #     return self
-
-    # def log(self, message):
-    #     """Add a message to the logs of the response
-
-    #     Args:
-    #         message (str): message
-
-    #     Returns:
-    #         ResponseFormatter: return self
-    #     """
-    #     self._msg_list.append(message)
-    #     self._msg = message
-    #     return self
 
     def add_result(self, result, **kwargs):
         if isinstance(result, (dict, Host, Group, Node, User)):

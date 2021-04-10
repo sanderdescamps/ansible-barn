@@ -6,7 +6,7 @@ from app.models import Node
 from app.utils import merge_args_data, list_parser, boolean_parser
 from app.blueprints.inventory.hosts import put_hosts
 from app.blueprints.inventory.groups import put_groups
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from app.utils.schemas import NodeQueryArgsSchema, NodeSchema
 
 node_pages = Blueprint('nodes', __name__)
@@ -26,7 +26,7 @@ def post_nodes(**kwargs):
     return _get_nodes(**kwargs)
 
 def _get_nodes(**kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     query_args = dict()
     if "name" in kwargs:     
         if boolean_parser(kwargs.get("regex",False)):
@@ -48,7 +48,7 @@ def _get_nodes(**kwargs):
 # @node_pages.route('/api/v1/inventory/nodes', methods=['PUT'])
 # @login_required
 # def put_nodes():
-#     resp = ResponseFormater()
+#     resp = ResponseBuilder()
 #     args = merge_args_data(request.args, request.get_json(silent=True))
 #     node_type = args.get("type", None)
 #     if not node_type:
@@ -66,7 +66,7 @@ def _get_nodes(**kwargs):
 # @node_pages.route('/api/v1/inventory/nodes', methods=['DELETE'])
 # @login_required
 # def delete_nodes(**kwargs):
-#     resp = ResponseFormater()
+#     resp = ResponseBuilder()
 #     query_args = dict()
 #     if "name" in kwargs:
 #         query_args["name__in"] = list_parser(kwargs.get("name"))

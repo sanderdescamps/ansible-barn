@@ -6,7 +6,7 @@ from mongoengine.errors import NotUniqueError
 from http import HTTPStatus
 from app.models import Host, Group
 from app.utils import list_parser, boolean_parser
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from app.utils.schemas import BaseResponse, HostQueryArgsSchema, NodeResponse, HostPutQueryArgsSchema
 
 host_pages = Blueprint('host', __name__)
@@ -32,7 +32,7 @@ def post_hosts(resp=None, **kwargs):
 
 def _get_hosts(resp=None, **kwargs):
     """List of hosts"""
-    resp = resp or ResponseFormater()
+    resp = resp or ResponseBuilder()
 
     query_args = dict()
     if "name" in kwargs:
@@ -60,7 +60,7 @@ def _get_hosts(resp=None, **kwargs):
 @login_required
 def put_hosts(action="present", resp=None, **kwargs):
     """Modify host"""
-    resp = resp or ResponseFormater()
+    resp = resp or ResponseBuilder()
 
     name = kwargs.get("name", None)
     if name is None:
@@ -167,7 +167,7 @@ def put_hosts(action="present", resp=None, **kwargs):
 @host_pages.response(200, BaseResponse)
 def delete_hosts(**kwargs):
     """Delete host or list of hosts"""
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     query_args = dict()
     if "name" in kwargs:
         names = list_parser(kwargs.get("name"))

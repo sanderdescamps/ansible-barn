@@ -7,7 +7,7 @@ from flask import request, render_template, jsonify, redirect
 from flask_smorest import Blueprint
 from flask_login import login_required
 from app.models import Host, Group, Node
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from webargs.flaskparser import use_kwargs
 from marshmallow import fields
 
@@ -22,7 +22,7 @@ import_pages = Blueprint('import', __name__)
 @login_required
 def put_file_import(**kwargs):
 
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     hosts_to_add = []
     groups_to_add = []
     keep_existing_nodes =  kwargs.get("keep")

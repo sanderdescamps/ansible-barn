@@ -9,7 +9,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from mongoengine.errors import NotUniqueError, DoesNotExist
 from app.models import User
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from app.utils import list_parser, merge_args_data, generate_password, boolean_parser
 from app.auth import admin_permission
 from app.utils.schemas import RegisterUserArgsSchema, UserPasswdSchema, UserPutQueryArgsSchema, UserQueryArgsSchema
@@ -35,7 +35,7 @@ def post_signup_user(**kwargs):
     return _signup_user(**kwargs)
 
 def _signup_user(**kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     hashed_password = kwargs.get("password_hash") or generate_password_hash(kwargs.get('password'), method='sha256')
     try:
         new_user = User(public_id=str(uuid.uuid4()),
@@ -69,7 +69,7 @@ def post_user(**kwargs):
     return _get_user(**kwargs)
 
 def _get_user(**kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     query_args = {}
     if "name" in kwargs:
         query_args["name"] = re.compile(r'.*{}.*'.format(kwargs.get("name")), re.IGNORECASE)
@@ -98,10 +98,7 @@ def put_user_short(**kwargs):
 @login_required
 @admin_permission.require(http_exception=403)
 def put_user(action="present", **kwargs):
-    return _put_user(action=action, **kwargs)
-
-def _put_user(action="present", **kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
 
     username = kwargs.get("username",None)
     action = action or kwargs.get("action")
@@ -160,7 +157,7 @@ def put_user_passwd(**kwargs):
 
 
 def _add_user(**kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     user_kwargs = kwargs.copy()
 
     if "password" not in user_kwargs and "password_hash" not in user_kwargs:
@@ -180,7 +177,7 @@ def _add_user(**kwargs):
     return resp
     
 def _modify_user(**user_kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
 
     username = user_kwargs.get("username")
     if username is None:
@@ -228,7 +225,7 @@ def _modify_user(**user_kwargs):
 @login_required
 @admin_permission.require(http_exception=403)
 def delete_user():
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     request_args = merge_args_data(request.args, request.get_json(silent=True))
     user_kwargs = {key: request_args.get(key) for key in [
         "name", "username", "public_id"] if key in request_args}

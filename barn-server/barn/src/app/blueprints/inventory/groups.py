@@ -6,7 +6,7 @@ from flask import request, abort
 from mongoengine.errors import NotUniqueError
 from flask_login import login_required
 from app.models import Group, Host
-from app.utils.formater import ResponseFormater
+from app.utils.formater import ResponseBuilder
 from app.utils.schemas import GroupPutQueryArgsSchema, GroupQueryArgsSchema, NodeResponse
 
 
@@ -29,7 +29,7 @@ def post_groups(resp=None, **kwargs):
     return _get_groups(resp=resp, **kwargs)
 
 def _get_groups(resp=None, **kwargs):
-    resp = resp or ResponseFormater()
+    resp = resp or ResponseBuilder()
     query_args = dict()
     if "name" in kwargs:     
         if kwargs.get("regex",False):
@@ -48,7 +48,7 @@ def _get_groups(resp=None, **kwargs):
 @login_required
 def put_groups(resp=None, **kwargs):
     if resp is None:
-        resp = ResponseFormater()
+        resp = ResponseBuilder()
 
     name = kwargs.get("name", None)
     if name is None:
@@ -249,7 +249,7 @@ def put_groups(resp=None, **kwargs):
 @group_pages.response(200, NodeResponse)
 @login_required
 def delete_groups(**kwargs):
-    resp = ResponseFormater()
+    resp = ResponseBuilder()
     query_args = dict()
     if "name" in kwargs:     
         if kwargs.get("regex",False):

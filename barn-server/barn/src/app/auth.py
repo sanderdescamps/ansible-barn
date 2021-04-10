@@ -11,7 +11,7 @@ from app.models import User
 #     def require_token(f):
 #         @wraps(f)
 #         def decorator(*args, **kwargs):
-#             resp = ResponseFormater()
+#             resp = ResponseBuilder()
 #             current_user = kwargs.get("current_user", None)
 
 #             token = request.headers.get('x-access-tokens', None)
