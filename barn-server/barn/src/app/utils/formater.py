@@ -83,7 +83,7 @@ class ResponseBuilder():
             self._changed = changed
         return self
 
-    def authentication_error(self, msg=None):
+    def authentication_failed(self, msg=None):
         """Register a authentication error
 
         Args:
