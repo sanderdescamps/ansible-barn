@@ -36,7 +36,7 @@ class ResponseBuilder():
             changed (bool, optional): Response changed status. Defaults to True.
 
         Returns:
-            ResponseFormatter: return self
+            ResponseBuilder: return self
         """
         self._changed = changed
         return self
@@ -51,7 +51,7 @@ class ResponseBuilder():
             status (int, optional): Set Status code. Defaults to HTTPStatus.BAD_REQUEST.
 
         Returns:
-            ResponseFormatter: return self
+            ResponseBuilder: return self
         """
         self._failed = failed
         self._status = status
@@ -71,7 +71,7 @@ class ResponseBuilder():
             status (int, optional): [description]. Defaults to HTTPStatus.OK.
 
         Returns:
-            ResponseFormatter: return self
+            ResponseBuilder: return self
         """
         self._failed = failed
         self._status = status
@@ -88,7 +88,7 @@ class ResponseBuilder():
             msg (str, optional): Set a main message. Defaults to None.
 
         Returns:
-            ResponseFormatter: return self
+            ResponseBuilder: return self
         """
         return self.add_header({
             'WWW.Authentication': 'Basic realm="login required"'
@@ -101,7 +101,7 @@ class ResponseBuilder():
             msg (str, optional): Add message. Defaults to None.
 
         Returns:
-            ResponseFormatter: return self
+            ResponseBuilder: return self
         """
         if msg:
             self.log(msg, main=True)
@@ -120,7 +120,14 @@ class ResponseBuilder():
             self._msg = message
 
 
+
     def add_result(self, result, **kwargs):
+        """Add results to response
+
+        Args:
+            result (:obj:`dict`|:obj:`list`|:obj:`Node` | :obj:`User`:obj:`QuerySet`|): Message
+
+        """
         if isinstance(result, (dict, Host, Group, Node, User)):
             result = [result]
         if isinstance(result, QuerySet):
@@ -140,7 +147,7 @@ class ResponseBuilder():
         self._header.update(header_dict)
         return self
 
-    def format(self):
+    def _format(self):
         return dict(
             status=self._status,
             changed=self._changed,
@@ -158,4 +165,4 @@ class ResponseBuilder():
         """
             return json response object which can be used by Flask
         """
-        return make_response(jsonify(self.format()), self._status, self._header)
+        return make_response(jsonify(self._format()), self._status, self._header)
