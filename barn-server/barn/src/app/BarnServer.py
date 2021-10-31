@@ -14,6 +14,7 @@ from app.blueprints.inventory.hosts import host_pages
 from app.blueprints.inventory.groups import group_pages
 from app.blueprints.inventory.nodes import node_pages
 from app.blueprints.inventory_export import inventory_pages
+from app.blueprints.inventory.crate import crate_pages
 from app.blueprints.debug import debug_pages
 from app.blueprints.views import views
 from app.blueprints.login import login_pages
@@ -42,19 +43,20 @@ class BarnServer(Flask):
         self.load_config_file(config_path)
         self.spec = Api(self, spec_kwargs=dict(
             response_plugin=ResponseReferencesPlugin(BarnError),
-            security = [{"bearerAuth": []}],
+            security = [{"basicAuth": []},{"bearerAuth": []}],
             components = { 
                 "securitySchemes": {
                     "basicAuth": {
                         "type": "http",
                         "scheme": "basic"
+                    },
+                    "bearerAuth": {
+                        "type":"http",
+                        "scheme": "bearer",
+                        "bearerFormat": "JWT"
                     }
-                },
-                # "bearerAuth": {
-                #         "type":"http",
-                #         "scheme": "bearer",
-                #         "bearerFormat": "JWT"
-                # }
+                }
+                
             }))
         
 
@@ -173,6 +175,7 @@ class BarnServer(Flask):
         self.register_blueprint(user_pages)
         self.register_blueprint(group_pages)
         self.register_blueprint(node_pages)
+        self.register_blueprint(crate_pages)
         self.register_blueprint(inventory_pages)
         self.register_blueprint(export_pages)
         self.register_blueprint(import_pages)
@@ -182,6 +185,7 @@ class BarnServer(Flask):
             self.register_blueprint(debug_pages)
         
         self.spec.register_blueprint(host_pages)
+        self.spec.register_blueprint(crate_pages)
         self.spec.register_blueprint(user_pages)
         self.spec.register_blueprint(group_pages)
         self.spec.register_blueprint(node_pages)

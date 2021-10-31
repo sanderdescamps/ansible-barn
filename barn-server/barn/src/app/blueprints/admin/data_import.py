@@ -1,6 +1,13 @@
 from http import HTTPStatus
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 import yaml
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 import re
 import logging, traceback
 from flask import request, render_template, jsonify, redirect
@@ -16,11 +23,29 @@ from app.utils.schemas import UploadQueryArgsSchema
 
 import_pages = Blueprint('import', __name__)
 
+doc_parameters=[
+    {
+        "in": "query",
+        "name": "full",
+        "required": False,
+        "description": "Keep empty fields",
+        "schema": dict(
+            type="boolean"
+        )
+    }
+]
+
 @import_pages.route('/api/v1/admin/import', methods=['PUT','POST'])
 @import_pages.arguments(UploadQueryArgsSchema, location='files', as_kwargs=True)
 @import_pages.arguments(UploadQueryArgsSchema, location='json', as_kwargs=True)
+@import_pages.doc(parameters=doc_parameters)
 @login_required
 def put_file_import(**kwargs):
+    """Import data
+
+    Upload data files at [/upload](/upload)
+
+    """
 
     resp = ResponseBuilder()
     hosts_to_add = []
@@ -32,7 +57,7 @@ def put_file_import(**kwargs):
         to_add = None
         if fileextention.lower() in ("yaml", "yml"):
             try:
-                to_add = yaml.load(file, Loader=yaml.FullLoader)
+                to_add = yaml.load(file, Loader=Loader)
                 resp.log("Successfully loaded %s"%(file.filename))
             except yaml.YAMLError as _:
                 return resp.failed(msg="failed to read yaml file: %s"%(file.filename), changed=False, status=HTTPStatus.BAD_REQUEST).build()
@@ -150,12 +175,14 @@ def _convert_ini(data):
             group_hosts = []
             for line in lines:
                 name = line.strip().split(" ")[0]
-                output_hosts[name] = dict(name=name, vars={})
+                variables = _extract_variables(" ".join(line.strip().split(" ")[1:]))
+                output_hosts[name] = dict(name=name, vars=variables)
                 group_hosts.append(name)
 
             if groupname != "ungrouped":
                 output_groups[groupname] = dict(name=groupname, hosts=group_hosts)
-    
+
+
         for section_title, lines in children_sections.items():
             groupname = section_title.split(":")[0]
             child_groups = [line.strip().split(" ")[0] for line in lines]
@@ -163,8 +190,45 @@ def _convert_ini(data):
                 output_groups[groupname] = dict(name=groupname)
             output_groups[groupname]["child_groups"] = child_groups
 
+        for section_title, lines in vars_sections.items():
+            entity_name = section_title.split(":")[0]
+            variables = {}
+            for line in lines:
+                variables.update(_extract_variables(line))
+            
+            if entity_name in output_groups:
+                current_vars = output_groups[entity_name].get("vars",{})
+                current_vars.update(variables)
+                output_groups[entity_name]["vars"] = current_vars
+            elif entity_name in output_hosts:
+                current_vars = output_hosts[entity_name].get("vars",{})
+                current_vars.update(variables)
+                output_hosts[entity_name]["vars"] = current_vars
+            elif entity_name == "all":
+                output_groups["all"] = dict(name="all", vars=variables)
+
         return dict(
             hosts=list(output_hosts.values()),
             groups=list(output_groups.values())
         )
+
+def _extract_variables(line):
+    line = line.split('#')[0]
+    properties = {}
+    match = re.findall(r"(\w+) *= *\"(.*?)\"", line)
+    if match:
+        for m in match:
+            properties[m[0]] = m[1]
+
+    match = re.findall(r"(\w+) *= *\'(.*?)\'", line)
+    if match:
+        for m in match:
+            properties[m[0]] = m[1]
+    
+    match = re.findall(r"(\w+) *= *([^ \"\']+)", line)
+    if match:
+        for m in match:
+            properties[m[0]] = m[1]
+
+    return properties
 

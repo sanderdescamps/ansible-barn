@@ -18,7 +18,7 @@ host_pages = Blueprint('host', __name__)
 @login_required
 def get_hosts(resp=None, **kwargs):
     """List of hosts"""
-    return _get_hosts(resp=resp, **kwargs)
+    return _get_hosts(resp=resp, **kwargs).build()
 
 
 @host_pages.route('/api/v1/inventory/hosts', methods=['POST'])
@@ -27,7 +27,8 @@ def get_hosts(resp=None, **kwargs):
 @host_pages.response(200, NodeResponse)
 @login_required
 def post_hosts(resp=None, **kwargs):
-    return _get_hosts(resp=resp, **kwargs)
+    """List of hosts"""
+    return _get_hosts(resp=resp, **kwargs).build()
 
 
 def _get_hosts(resp=None, **kwargs):
@@ -50,7 +51,7 @@ def _get_hosts(resp=None, **kwargs):
             kwargs.get("regex", False)) else kwargs.get('name')
         resp.succeed(msg='No hosts found for {}'.format(log_name))
     resp.add_result(o_hosts)
-    return resp.build()
+    return resp
 
 
 @host_pages.route('/api/v1/inventory/hosts', defaults={'action': "present"}, methods=['PUT'])

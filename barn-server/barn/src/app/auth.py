@@ -89,7 +89,7 @@ def load_user_from_request(l_request):
             else:
                 logging.getLogger().warning("Authentication failed: User %s failed to login", check_user.username)
         else:
-            logging.getLogger().warning("Authentication failed: User {} does not exist", auth.username)
+            logging.getLogger().warning("Authentication failed: User %s does not exist", auth.username)
 
     return None
 

@@ -1,7 +1,8 @@
 from http import HTTPStatus
+from mongoengine.document import Document
 from mongoengine.queryset import QuerySet
 from flask import jsonify, make_response
-from app.models import Node, Host, Group, User
+from app.models import Crate, Node, Host, Group, User
 
 
 class ResponseBuilder():
@@ -24,7 +25,8 @@ class ResponseBuilder():
             new._msg_list = list(self._msg_list + other._msg_list)
             new._header.update(other._header)
             new._header.update(self._header)
-            new._result = list(set(self._result + other._result))
+            new.add_result(self._result)
+            new.add_result(other._result)
             return new
         else:
             raise TypeError
@@ -118,6 +120,7 @@ class ResponseBuilder():
         self._msg_list.append(message)
         if main:
             self._msg = message
+        return self
 
 
 
@@ -128,7 +131,7 @@ class ResponseBuilder():
             result (:obj:`dict`|:obj:`list`|:obj:`Node` | :obj:`User`:obj:`QuerySet`|): Message
 
         """
-        if isinstance(result, (dict, Host, Group, Node, User)):
+        if isinstance(result, (dict, Host, Group, Node, User, Crate)):
             result = [result]
         if isinstance(result, QuerySet):
             result = list(result)
@@ -136,10 +139,10 @@ class ResponseBuilder():
             for res in result:
                 if isinstance(res, dict):
                     self._result.append(res)
-                elif isinstance(res, Node) or isinstance(res, Host) or isinstance(res, Group) or isinstance(res, User):
-                    self._result.append(res.to_barn_dict())
+                elif isinstance(res, (Host, Group, Node, User, Crate)):
+                    self._result.append(res)
                 else:
-                    raise TypeError("unsupported result type")
+                    raise TypeError("unsupported result type: {}".format(str(type(res))))
         else:
             raise TypeError("unsupported result type")
 
@@ -148,13 +151,23 @@ class ResponseBuilder():
         return self
 
     def _format(self):
+        results = []
+        for r in self._result:
+            if isinstance(r, Document) and callable(getattr(r,"to_barn_dict", None)):
+                r.reload()
+                results.append(r.to_barn_dict())
+            elif isinstance(r,dict):
+                results.append(r)
+            else:
+                raise TypeError("unsupported result type: {}".format(str(type(r)))) 
+        
         return dict(
             status=self._status,
             changed=self._changed,
             failed=self._failed,
             msg=self._msg_list[-1] if self._msg is None else self._msg,
             msg_list=self._msg_list,
-            result=self._result
+            result=results
         )
 
     def get_changed(self):

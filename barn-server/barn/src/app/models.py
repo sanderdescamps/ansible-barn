@@ -1,12 +1,16 @@
 import logging
-from os import sched_rr_get_interval
 import uuid
+try:
+    import ujson as json
+except ImportError:
+    import json
 from abc import abstractmethod
 from mongoengine import Document, StringField, DictField, ListField, ReferenceField, BooleanField
 from werkzeug.security import generate_password_hash
 from flask_login.mixins import UserMixin
 from flask_principal import RoleNeed
 from app.utils import remove_empty_fields
+
 
 
 # class Role(Document):
@@ -364,9 +368,31 @@ class Group(Node):
 
 class Crate(Document):
 
-    id=StringField()
+    crate_id=StringField(unique=True, required=True)
     type=StringField(required=True)
     vars = DictField(default={})
+
+    def __init__(self, *args, **values):
+        values["crate_id"] = values.get("crate_id") or str(uuid.uuid4())
+        super().__init__(*args, **values)
+    
+    def __hash__(self):
+        return hash(json.dumps(dict(
+            crate_id=self.crate_id,
+            type=self.type,
+            vars=self.vars
+            )))
+
+    def to_barn_dict(self, parent_vars=False):
+        return dict(
+            type=self.type,
+            vars=self.vars,
+            crate_id=self.get_id(),
+            assigned_to=[n.name for n in self.get_subscribers()],
+        )
+
+    def get_id(self):
+        return self.crate_id
 
     def get_subscribers(self, recursive=False):
         o_subscribers = list(Node.objects(crates__in=[self]))
@@ -379,6 +405,6 @@ class Crate(Document):
         return list(o_subsc_hosts)
 
     def __str__(self):
-        return "%s_%s"%("Crate", str(self.id))
+        return "%s_%s"%("Crate", str(self.get_id()))
 
         

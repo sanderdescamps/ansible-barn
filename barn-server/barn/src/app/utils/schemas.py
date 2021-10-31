@@ -2,7 +2,7 @@ import logging
 import re
 from marshmallow import Schema, fields, pre_load, validate
 from marshmallow.exceptions import ValidationError
-from marshmallow.utils import pprint
+from marshmallow.utils import EXCLUDE, pprint
 from flask_smorest.fields import Upload
 from app.utils import boolean_parser, list_parser
 
@@ -25,6 +25,70 @@ class GroupSchema(NodeSchema):
 
 class HostSchema(NodeSchema):
     type=fields.String(default="host", validate=validate.OneOf("host"))
+
+
+
+class CrateAddSchema(Schema):
+    type=fields.String(description="Type of the crate.", required=True)
+    vars=fields.Dict(description="Variables defined in the crate")
+    assign_to=fields.List(fields.String, description="assign to nodes", list_parser=True)
+    
+
+    @pre_load
+    def string2list(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("list_parser",False):
+                if f in data:
+                    data[f] = list_parser(data.get(f))
+        return data
+
+class CrateUpdateSchema(Schema):
+    crate_id=fields.String(description="Id of the crate", required=True)
+    type=fields.String(description="Type of the crate.")
+    vars=fields.Dict(description="Variables defined in the crate")
+    vars_absent = fields.List(fields.String(), description="Removes variables from crate", example=["old_variable"], list_parser=True)
+    assign_to=fields.List(fields.String, description="Assign crate to nodes", list_parser=True)
+    not_assign_to=fields.List(fields.String, description="Remove crate from node", list_parser=True)
+    force=fields.Boolean(description="Allow dangerous actions like changing ", default=False)
+
+    @pre_load
+    def string2list(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("list_parser",False):
+                if f in data:
+                    data[f] = list_parser(data.get(f))
+        return data
+
+class CrateQuerySchema(Schema):
+    type=fields.String(description="Type of the crate.")
+    crate_id=fields.String(description="Id of the crate" )
+    assign_to=fields.List(fields.String, description="assign to nodes", list_parser=True)
+
+    class Meta:
+        unknown = EXCLUDE
+
+    @pre_load
+    def string2list(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("list_parser",False):
+                if f in data:
+                    data[f] = list_parser(data.get(f))
+        return data
+
+
+class CrateDeleteSchema(Schema):
+    type=fields.String(description="Type of the crate.")
+    crate_id=fields.String(description="Id of the crate")
+    multiple=fields.Boolean(description="Allow multiple crates to be removed", default=False)
+    force=fields.Boolean(description="Allow removal of multiple/all crates", default=False)
+
+    @pre_load
+    def string2list(self, data, **kwargs):
+        for f,v in getattr(self,"fields",{}).items():
+            if isinstance(v,fields.List) and v.metadata.get("list_parser",False):
+                if f in data:
+                    data[f] = list_parser(data.get(f))
+        return data
 
 class NodeQueryArgsSchema(Schema):
     type = fields.String(description="Type of node", required=False, validate=validate.OneOf(["host","group"]))
@@ -226,4 +290,5 @@ class BarnError(BaseResponse):
 class NodeResponse(BaseResponse):
     result = fields.List(fields.Nested(NodeSchema), description='Result with list of Nodes')
 
-
+class CrateResponse(BaseResponse):
+    result = fields.List(fields.Nested(CrateSchema), description='Result with list of Nodes')

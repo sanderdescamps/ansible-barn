@@ -11,3 +11,4 @@ Flask-Principal
 marshmallow
 flask-smorest
 PyYAML
+ujson
