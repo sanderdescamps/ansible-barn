@@ -6,7 +6,7 @@ import configparser
 import logging
 from flask import Flask
 from flask_smorest import Api
-from flask_smorest.spec import ResponseReferencesPlugin
+# from flask_smorest.spec import ResponseReferencesPlugin
 from app.blueprints.admin.users import user_pages
 from app.blueprints.admin.export import export_pages
 from app.blueprints.admin.data_import import import_pages
@@ -42,7 +42,7 @@ class BarnServer(Flask):
         super().__init__(__name__, **kwargs)
         self.load_config_file(config_path)
         self.spec = Api(self, spec_kwargs=dict(
-            response_plugin=ResponseReferencesPlugin(BarnError),
+            # response_plugin=ResponseReferencesPlugin(BarnError),
             security = [{"basicAuth": []},{"bearerAuth": []}],
             components = { 
                 "securitySchemes": {
